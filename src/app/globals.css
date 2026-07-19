@@ -183,6 +183,22 @@ body {
   animation: skill-fill 1.5s ease-out forwards;
 }
 
+/* Marquee animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 28s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
 /* Blog prose styling */
 .prose h1 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary); }
 .prose h2 { font-size: 1.5rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.75rem; color: var(--text-primary); }

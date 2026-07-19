@@ -55,7 +55,7 @@ export default function Contact() {
               </div>
               <div>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>Phone</p>
-                <a href="tel:+923227978911" className="font-semibold text-sm hover:text-primary transition-colors" style={{ color: "var(--text-primary)" }}>
+                <a href="https://wa.me/923227978911" className="font-semibold text-sm hover:text-primary transition-colors" style={{ color: "var(--text-primary)" }}>
                   (+92) 322-7978911
                 </a>
               </div>
@@ -67,8 +67,8 @@ export default function Contact() {
               </div>
               <div>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>Email</p>
-                <a href="mailto:abdulmoeez@email.com" className="font-semibold text-sm hover:text-accent transition-colors" style={{ color: "var(--text-primary)" }}>
-                  abdulmoeez@email.com
+                <a href="mailto:moeez7978911@email.com" className="font-semibold text-sm hover:text-accent transition-colors" style={{ color: "var(--text-primary)" }}>
+                  moeez7978911@email.com
                 </a>
               </div>
             </div>
@@ -79,8 +79,8 @@ export default function Contact() {
               </div>
               <div>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>LinkedIn</p>
-                <a href="https://linkedin.com/in/abdulmoeez" target="_blank" className="font-semibold text-sm hover:text-emerald transition-colors" style={{ color: "var(--text-primary)" }}>
-                  linkedin.com/in/abdulmoeez
+                <a href="https://www.linkedin.com/in/abdul-moeez-64760529b/" target="_blank" className="font-semibold text-sm hover:text-emerald transition-colors" style={{ color: "var(--text-primary)" }}>
+                  linkedin.com/in/abdul-moeez-64760529b/
                 </a>
               </div>
             </div>
