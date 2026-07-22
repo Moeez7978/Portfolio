@@ -1,0 +1,435 @@
+1:"$Sreact.fragment"
+2:I[39756,["/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","/Portfolio/_next/static/chunks/14mumt5_n0xhi.js"],"default"]
+3:I[37457,["/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","/Portfolio/_next/static/chunks/14mumt5_n0xhi.js"],"default"]
+4:I[43880,["/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","/Portfolio/_next/static/chunks/14mumt5_n0xhi.js"],"Analytics"]
+5:I[50077,["/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","/Portfolio/_next/static/chunks/14mumt5_n0xhi.js","/Portfolio/_next/static/chunks/1r2yq4buzcyx4.js","/Portfolio/_next/static/chunks/1l_jegyy81nx5.js"],"default"]
+c:I[68027,["/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","/Portfolio/_next/static/chunks/14mumt5_n0xhi.js"],"default",1]
+:HL["/Portfolio/_next/static/chunks/1ku7hra_hzsxn.css","style"]
+:HL["/Portfolio/_next/static/media/797e433ab948586e-s.p.0r6juujl39pe6.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Portfolio/_next/static/media/caa3a2e1cccd8315-s.p.0wgildi0cnwt9.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+6:T383e,# <img src="https://upload.wikimedia.org/wikipedia/commons/b/bc/Amazon-S3-Logo.svg" width="40" align="center"/> Amazon S3 — Complete Guide for AWS Solutions Architect Associate
+
+> **Amazon Simple Storage Service (S3)** is AWS's object storage service offering industry-leading scalability, data availability, security, and performance.
+
+> 📸 **Visual diagrams throughout this guide are sourced from [Adrian Cantrill's AWS SAA-C03 course](https://learn.cantrill.io) — highly recommended for anyone serious about AWS certifications.
+
+---
+
+## 📐 Architecture & Infrastructure
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3AccessLogs.png" width="750"/>
+</p>
+
+### Core Concepts
+
+| Concept | Description |
+|---|---|
+| **Bucket** | Top-level container for objects. Globally unique name, region-specific. |
+| **Object** | The actual data stored (file + metadata). Max size **5 TB**. |
+| **Key** | Unique identifier for an object within a bucket (full path). |
+| **Region** | Buckets are created in a specific AWS region. Data does NOT leave the region unless you configure it. |
+| **Namespace** | Global — bucket names must be unique across ALL AWS accounts. |
+
+### Object Anatomy
+
+```
+s3://my-bucket/folder/subfolder/file.jpg
+       │              │              │
+    Bucket          Prefix          Key
+```
+
+- Object metadata: system metadata + user-defined metadata (key-value pairs)
+- Max object size via single PUT: **5 GB**
+- For objects > 5 GB → **Multipart Upload** is required (recommended for > 100 MB)
+
+---
+
+## 🔐 Security
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3Security-2.png" width="750"/>
+</p>
+
+### Access Control Layers
+
+```
+IAM Policies  →  Bucket Policies  →  ACLs  →  Block Public Access
+```
+
+| Mechanism | Scope | Use Case |
+|---|---|---|
+| **IAM Policies** | User/Role level | Control what AWS principals can do |
+| **Bucket Policies** | Bucket/Object level (JSON) | Cross-account access, public access, enforce HTTPS |
+| **ACLs** | Object/Bucket level | Legacy, mostly disabled by default now |
+| **Block Public Access** | Account/Bucket level | Override all public grants — recommended ON |
+
+### Bucket Policy Example — Enforce HTTPS
+
+```json
+{
+  "Effect": "Deny",
+  "Principal": "*",
+  "Action": "s3:*",
+  "Resource": "arn:aws:s3:::my-bucket/*",
+  "Condition": {
+    "Bool": { "aws:SecureTransport": "false" }
+  }
+}
+```
+
+### Encryption
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3Encryption-1.png" width="750"/>
+</p>
+
+
+| Type | Description |
+|---|---|
+| **SSE-S3** | AWS managed keys (AES-256). Default encryption. |
+| **SSE-KMS** | AWS KMS managed keys. Audit trail via CloudTrail. |
+| **SSE-C** | Customer-provided keys. AWS does NOT store the key. |
+| **Client-Side** | Encrypt before uploading. You manage everything. |
+
+> 💡 **Exam Tip:** SSE-KMS has API call limits (KMS quota). For high-throughput workloads, SSE-S3 is preferred.
+
+---
+
+## 🌐 Static Website Hosting
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3StaticHosting-1.png" width="750"/>
+</p>
+
+### Setup Steps
+
+1. Enable **Static Website Hosting** on the bucket
+2. Set **Index document** (e.g., `index.html`) and **Error document** (e.g., `error.html`)
+3. Disable **Block Public Access**
+4. Attach a **Bucket Policy** to allow `s3:GetObject` for `"Principal": "*"`
+
+### Website Endpoint Format
+
+```
+http://<bucket-name>.s3-website-<region>.amazonaws.com
+# or
+http://<bucket-name>.s3-website.<region>.amazonaws.com
+```
+
+### CORS (Cross-Origin Resource Sharing)
+
+Required when a web app hosted on one domain fetches resources from an S3 bucket on another domain.
+
+```xml
+<CORSConfiguration>
+  <CORSRule>
+    <AllowedOrigin>https://myapp.com</AllowedOrigin>
+    <AllowedMethod>GET</AllowedMethod>
+    <AllowedHeader>*</AllowedHeader>
+  </CORSRule>
+</CORSConfiguration>
+```
+
+---
+
+## 🗂️ Versioning
+
+
+- Enabled at the **bucket level**
+- Once enabled, can only be **suspended** (not disabled)
+- Each object version gets a unique **Version ID**
+- Deleting an object adds a **Delete Marker** (doesn't permanently delete)
+- To permanently delete → specify the **Version ID**
+
+### States
+
+```
+Unversioned  →  Versioning Enabled  →  Versioning Suspended
+                      ↑_________________________________|
+                      (can re-enable from suspended)
+```
+
+> 💡 **Exam Tip:** Versioning protects against accidental deletes and overwrites. MFA Delete adds an extra layer requiring MFA to delete versions.
+
+### MFA Delete
+
+- Requires **MFA** to permanently delete object versions or change versioning state
+- Can only be enabled by the **bucket owner (root account)**
+- Must be enabled via **CLI** (not console)
+
+---
+
+## 🔒 Object Lock
+
+Implements **WORM** (Write Once Read Many) model. Prevents objects from being deleted or overwritten.
+
+### Retention Modes
+
+| Mode | Description |
+|---|---|
+| **Compliance** | No one (including root) can delete/overwrite. Retention period cannot be shortened. |
+| **Governance** | Users with special IAM permissions can override. Flexible for most use cases. |
+
+### Legal Hold
+
+- Independent of retention period
+- Any user with `s3:PutObjectLegalHold` permission can place/remove it
+- Prevents deletion regardless of retention settings
+
+### Vault Lock (Glacier)
+
+- Similar to Object Lock but for **S3 Glacier**
+- Policy is locked and **cannot be changed** once set
+- Used for compliance (HIPAA, SEC Rule 17a-4)
+
+---
+
+## ♻️ Lifecycle Policies
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3LifeCycle.png" width="750"/>
+</p>
+
+Automate transitioning objects between storage classes or expiring them.
+
+### Transition Actions
+
+```
+S3 Standard  →  Standard-IA / One Zone-IA  →  Glacier Instant  →  Glacier Flexible  →  Glacier Deep Archive
+   (0 days)         (min 30 days)              (min 90 days)       (min 90 days)         (min 180 days)
+```
+
+### Expiration Actions
+
+- Delete objects after X days
+- Delete expired delete markers
+- Delete incomplete multipart uploads
+
+> 💡 **Exam Tip:** Minimum 30 days in Standard before transitioning to Standard-IA or One Zone-IA.
+
+---
+
+## 🔁 Replication
+
+| Feature | CRR | SRR |
+|---|---|---|
+| **Full Name** | Cross-Region Replication | Same-Region Replication |
+| **Use Case** | Compliance, low-latency global access | Log aggregation, live replication between accounts |
+| **Versioning Required** | ✅ Both source & destination | ✅ Both source & destination |
+| **Replication Scope** | Across AWS regions | Within same region |
+| **Delete Markers** | Optional replication | Optional replication |
+
+> 💡 Replication is **asynchronous**. Only **new objects** are replicated after enabling (use S3 Batch Operations for existing objects).
+
+---
+
+## ⚡ Performance
+
+### Baseline
+
+- **3,500 PUT/COPY/POST/DELETE** requests/sec per prefix
+- **5,500 GET/HEAD** requests/sec per prefix
+- No limit on number of prefixes
+
+### Optimization Techniques
+
+| Technique | Benefit |
+|---|---|
+| **Multipart Upload** | Parallelize uploads, required > 5 GB |
+| **S3 Transfer Acceleration** | Uses CloudFront edge locations for faster uploads |
+| **Byte-Range Fetches** | Parallelize downloads, partial file retrieval |
+| **S3 Select** | Retrieve subset of data using SQL (reduces data transfer) |
+| **Prefix Spreading** | Distribute objects across multiple prefixes for higher throughput |
+
+---
+
+## 📡 Event Notifications
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3EventNotifications.png" width="750"/>
+</p>
+
+S3 can trigger events to:
+
+- **SNS** — Fan-out notifications
+- **SQS** — Queue for processing
+- **Lambda** — Serverless processing
+- **EventBridge** — Advanced filtering, multiple destinations
+
+### Supported Events
+
+```
+s3:ObjectCreated:*    s3:ObjectRemoved:*    s3:ObjectRestore:*
+s3:Replication:*      s3:LifecycleExpiration:*
+```
+
+---
+
+## 🔗 Pre-Signed URLs
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3PresignedURL-1.png" width="750"/>
+</p>
+
+Grant **temporary access** to private objects without changing bucket policy.
+
+```bash
+aws s3 presign s3://my-bucket/my-file.jpg --expires-in 3600
+```
+
+- Default expiry: **3600 seconds** (1 hour)
+- Max expiry: **7 days** (using SDK), **12 hours** (using CLI)
+- Inherits permissions of the **IAM user/role** that generated it
+
+---
+
+## 📊 Storage Classes — Detailed Comparison
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3StorageClasses-2.png" width="750"/>
+</p>
+
+### At a Glance
+
+| Storage Class | Use Case | Availability | Durability | Min Storage Duration | Retrieval Fee |
+|---|---|---|---|---|---|
+| **S3 Standard** | Frequently accessed data | 99.99% | 99.999999999% (11 9s) | None | None |
+| **S3 Intelligent-Tiering** | Unknown/changing access patterns | 99.9% | 11 9s | None | None (monitoring fee applies) |
+| **S3 Standard-IA** | Infrequently accessed, rapid retrieval | 99.9% | 11 9s | 30 days | Per GB retrieved |
+| **S3 One Zone-IA** | Infrequent, non-critical, single AZ | 99.5% | 11 9s (single AZ) | 30 days | Per GB retrieved |
+| **S3 Glacier Instant Retrieval** | Archive, millisecond access | 99.9% | 11 9s | 90 days | Per GB retrieved |
+| **S3 Glacier Flexible Retrieval** | Archive, minutes to hours access | 99.99% | 11 9s | 90 days | Per GB retrieved |
+| **S3 Glacier Deep Archive** | Long-term archive, 12h retrieval | 99.99% | 11 9s | 180 days | Per GB retrieved |
+| **S3 Express One Zone** | High-performance, single AZ | 99.95% | 11 9s (single AZ) | None | None |
+
+---
+
+### Retrieval Times
+
+| Storage Class | Retrieval Time | Retrieval Options |
+|---|---|---|
+| **S3 Standard** | Immediate (ms) | — |
+| **S3 Intelligent-Tiering** | Immediate (ms) | — |
+| **S3 Standard-IA** | Immediate (ms) | — |
+| **S3 One Zone-IA** | Immediate (ms) | — |
+| **S3 Glacier Instant Retrieval** | Milliseconds | — |
+| **S3 Glacier Flexible Retrieval** | 1 min – 12 hours | Expedited (1-5 min), Standard (3-5 hr), Bulk (5-12 hr) |
+| **S3 Glacier Deep Archive** | 12 – 48 hours | Standard (12 hr), Bulk (48 hr) |
+| **S3 Express One Zone** | Single-digit ms | — |
+
+---
+
+### Intelligent-Tiering — Automatic Tiers
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3IntelligentTiering.png" width="750"/>
+</p>
+
+| Tier | Access Pattern | Monthly Monitoring Fee |
+|---|---|---|
+| Frequent Access | Default | ✅ Yes |
+| Infrequent Access | Not accessed for 30 days | ✅ Yes |
+| Archive Instant Access | Not accessed for 90 days | ✅ Yes |
+| Archive Access | Not accessed for 90–730 days (opt-in) | ✅ Yes |
+| Deep Archive Access | Not accessed for 180–730 days (opt-in) | ✅ Yes |
+
+---
+
+### Cost Comparison (Approximate, us-east-1)
+
+| Storage Class | Storage Cost (per GB/month) | Retrieval Cost |
+|---|---|---|
+| S3 Standard | $0.023 | Free |
+| S3 Intelligent-Tiering | $0.023 (frequent) / $0.0125 (infrequent) | Free |
+| S3 Standard-IA | $0.0125 | $0.01/GB |
+| S3 One Zone-IA | $0.01 | $0.01/GB |
+| S3 Glacier Instant | $0.004 | $0.03/GB |
+| S3 Glacier Flexible | $0.0036 | $0.01–$0.03/GB |
+| S3 Glacier Deep Archive | $0.00099 | $0.02/GB |
+
+> ⚠️ Prices are approximate and subject to change. Always check [AWS Pricing](https://aws.amazon.com/s3/pricing/) for current rates.
+
+---
+
+## 🧰 Additional Features
+
+### S3 Select & Glacier Select
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3andGlacierSelect.png" width="750"/>
+</p>
+
+- Retrieve subset of data using SQL on individual objects (CSV, JSON, Parquet)
+- Reduces data transfer and cost — filtering happens server-side
+
+### S3 Access Points
+
+- Simplify access management for shared datasets
+- Each access point has its own DNS name and policy
+- Can restrict access to specific VPCs
+
+### S3 Object Lambda
+
+- Transform objects on-the-fly as they are retrieved
+- Use cases: redact PII, convert formats, resize images
+- No need to store multiple versions of the same object
+
+### S3 Batch Operations
+
+- Perform bulk operations on billions of objects
+- Operations: Copy, Invoke Lambda, Restore, Tag, ACL, Object Lock
+- Uses a manifest (CSV or S3 Inventory report)
+
+### S3 Inventory
+
+- Audit and report on objects and their metadata
+- Output: CSV, ORC, or Parquet
+- Scheduled: daily or weekly
+
+### S3 Storage Lens
+
+- Organization-wide visibility into storage usage and activity
+- 29+ usage and activity metrics
+- Interactive dashboard in the console
+
+---
+
+## 📋 Quick Reference — Exam Tips
+
+| Topic | Key Point |
+|---|---|
+| Durability | Always **11 9s** for all classes (except One Zone-IA — same durability but single AZ risk) |
+| Availability | Standard = 99.99%, IA = 99.9%, One Zone-IA = 99.5% |
+| Min Billing | Standard-IA & One Zone-IA = **30 days**, Glacier = **90 days**, Deep Archive = **180 days** |
+| Multipart Upload | Required > 5 GB, recommended > 100 MB |
+| Transfer Acceleration | Uses **CloudFront edge** locations |
+| Pre-signed URL | Temporary access using **creator's permissions** |
+| Object Lock | Requires **versioning enabled** |
+| MFA Delete | Only **root account** via **CLI** |
+| Replication | Only **new objects** after enabling; versioning required |
+| S3 Select | SQL queries on **individual objects** (CSV, JSON, Parquet) |
+| Athena | SQL queries on **S3 data lake** (multiple objects) |
+
+---
+
+<p align="center">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/b/bc/Amazon-S3-Logo.svg" width="60"/><br/>
+  <em>Amazon S3 — Store and retrieve any amount of data, at any time, from anywhere.</em>
+</p>
+0:{"P":null,"c":["","blog"],"q":"","i":false,"f":[[["",{"children":["blog",{"children":["__PAGE__",{}]}]},"$undefined","$undefined",16],[["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Portfolio/_next/static/chunks/1ku7hra_hzsxn.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","async":true,"nonce":"$undefined"}],["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/14mumt5_n0xhi.js","async":true,"nonce":"$undefined"}]],["$","html",null,{"lang":"en","suppressHydrationWarning":true,"children":[["$","body",null,{"className":"geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__variable antialiased","children":["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}]}],["$","$L4",null,{}]]}]]}],{"children":[["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":[["$","$1","c",{"children":[["$","$L5",null,{"posts":[{"slug":"why-i-moved-to-devops","title":"Why I Moved from Development to DevOps","date":"2025-06-15","excerpt":"My journey from writing frontend code to managing cloud infrastructure and CI/CD pipelines.","tags":["DevOps","Career","Cloud"],"content":"\n# Why I Moved from Development to DevOps\n\nAs a developer, I always found myself fascinated by the deployment side of things. How does my code actually reach users? What happens after I push to main?\n\n## The Turning Point\n\nWorking at Cyber Meteors, I realized that building great software is only half the battle. The other half is delivering it reliably, scaling it efficiently, and monitoring it continuously.\n\n## What I Learned\n\n- Infrastructure as Code changes everything\n- CI/CD pipelines save hundreds of hours\n- Cloud certifications open doors\n- The DevOps mindset is about collaboration\n\n## Where I Am Now\n\nToday, I architect cloud solutions on AWS and Azure, build automated pipelines, and containerize applications. The transition wasn't easy, but it was absolutely worth it.\n"},{"slug":"zero-downtime-deployments","title":"Setting Up Zero-Downtime Deployments with GitHub Actions","date":"2025-05-20","excerpt":"A practical guide to configuring CI/CD pipelines that deploy without any service interruption.","tags":["CI/CD","GitHub Actions","AWS"],"content":"\n# Setting Up Zero-Downtime Deployments with GitHub Actions\n\nZero-downtime deployment ensures your users never experience service interruption during updates. Here's how I set it up for a React application deployed on EC2.\n\n## The Pipeline\n\n1. **Linting** — Code quality checks\n2. **Testing** — Automated test suite\n3. **Coverage** — Reports via Codecov\n4. **Deploy** — Rolling update to EC2\n\n## Key Takeaways\n\n- Always have health checks in place\n- Use rolling deployments over blue-green for simpler setups\n- Monitor your deployment metrics\n- Rollback strategies are non-negotiable\n"},{"slug":"AWS-S3-Complete-Guide","title":"AWS-S3-Complete-Guide","date":"","excerpt":"# <img src=\"https://upload.wikimedia.org/wikipedia/commons/b/bc/Amazon-S3-Logo.svg\" width=\"40\" align=\"center\"/> Amazon S3 — Complete Guide for AWS Sol...","tags":[],"content":"$6"}]}],["$L7","$L8"],"$L9"]}],{},null,false,null]},null,false,"$@a"]},null,false,null],"$Lb",false]],"m":"$undefined","G":["$c",["$Ld"]],"S":true,"h":null,"s":"$undefined","l":"$undefined","p":"$undefined","d":"$undefined","b":"1T09iAUWvs2G2EyW04Lbp"}
+e:I[97367,["/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","/Portfolio/_next/static/chunks/14mumt5_n0xhi.js"],"OutletBoundary"]
+f:"$Sreact.suspense"
+12:I[97367,["/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","/Portfolio/_next/static/chunks/14mumt5_n0xhi.js"],"ViewportBoundary"]
+14:I[97367,["/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","/Portfolio/_next/static/chunks/14mumt5_n0xhi.js"],"MetadataBoundary"]
+7:["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/1r2yq4buzcyx4.js","async":true,"nonce":"$undefined"}]
+8:["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/1l_jegyy81nx5.js","async":true,"nonce":"$undefined"}]
+9:["$","$Le",null,{"children":["$","$f",null,{"name":"Next.MetadataOutlet","children":"$@10"}]}]
+11:[]
+a:"$W11"
+b:["$","$1","h",{"children":[null,["$","$L12",null,{"children":"$L13"}],["$","div",null,{"hidden":true,"children":["$","$L14",null,{"children":["$","$f",null,{"name":"Next.Metadata","children":"$L15"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}]
+d:["$","link","0",{"rel":"stylesheet","href":"/Portfolio/_next/static/chunks/1ku7hra_hzsxn.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]
+13:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+16:I[27201,["/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","/Portfolio/_next/static/chunks/14mumt5_n0xhi.js"],"IconMark"]
+10:null
+15:[["$","title","0",{"children":"Abdul Moeez | DevOps Engineer & Cloud Architect"}],["$","meta","1",{"name":"description","content":"AWS Certified Solutions Architect | DevOps Engineer specializing in scalable cloud solutions, CI/CD pipelines, and modern web development."}],["$","link","2",{"rel":"icon","href":"/Portfolio/favicon.ico?favicon.2vob68tjqpejf.ico","sizes":"256x256","type":"image/x-icon"}],["$","$L16","3",{}]]

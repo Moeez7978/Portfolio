@@ -1,0 +1,687 @@
+1:"$Sreact.fragment"
+2:I[90011,["/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","/Portfolio/_next/static/chunks/14mumt5_n0xhi.js","/Portfolio/_next/static/chunks/0rpi9rj9in923.js","/Portfolio/_next/static/chunks/1l_jegyy81nx5.js"],"default"]
+7:I[97367,["/Portfolio/_next/static/chunks/3m2lffd5pdmig.js","/Portfolio/_next/static/chunks/14mumt5_n0xhi.js"],"OutletBoundary"]
+8:"$Sreact.suspense"
+3:T4c13,<h1><img src="https://upload.wikimedia.org/wikipedia/commons/b/bc/Amazon-S3-Logo.svg" width="40" align="center"/> Amazon S3 — Complete Guide for AWS Solutions Architect Associate</h1>
+<blockquote>
+<p><strong>Amazon Simple Storage Service (S3)</strong> is AWS's object storage service offering industry-leading scalability, data availability, security, and performance.</p>
+</blockquote>
+<blockquote>
+<p>📸 **Visual diagrams throughout this guide are sourced from <a href="https://learn.cantrill.io">Adrian Cantrill's AWS SAA-C03 course</a> — highly recommended for anyone serious about AWS certifications.</p>
+</blockquote>
+<hr>
+<h2>📐 Architecture &#x26; Infrastructure</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3AccessLogs.png" width="750"/>
+</p>
+<h3>Core Concepts</h3>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Bucket</strong></td>
+<td>Top-level container for objects. Globally unique name, region-specific.</td>
+</tr>
+<tr>
+<td><strong>Object</strong></td>
+<td>The actual data stored (file + metadata). Max size <strong>5 TB</strong>.</td>
+</tr>
+<tr>
+<td><strong>Key</strong></td>
+<td>Unique identifier for an object within a bucket (full path).</td>
+</tr>
+<tr>
+<td><strong>Region</strong></td>
+<td>Buckets are created in a specific AWS region. Data does NOT leave the region unless you configure it.</td>
+</tr>
+<tr>
+<td><strong>Namespace</strong></td>
+<td>Global — bucket names must be unique across ALL AWS accounts.</td>
+</tr>
+</tbody>
+</table>
+<h3>Object Anatomy</h3>
+<pre><code>s3://my-bucket/folder/subfolder/file.jpg
+       │              │              │
+    Bucket          Prefix          Key
+</code></pre>
+<ul>
+<li>Object metadata: system metadata + user-defined metadata (key-value pairs)</li>
+<li>Max object size via single PUT: <strong>5 GB</strong></li>
+<li>For objects > 5 GB → <strong>Multipart Upload</strong> is required (recommended for > 100 MB)</li>
+</ul>
+<hr>
+<h2>🔐 Security</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3Security-2.png" width="750"/>
+</p>
+<h3>Access Control Layers</h3>
+<pre><code>IAM Policies  →  Bucket Policies  →  ACLs  →  Block Public Access
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Scope</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>IAM Policies</strong></td>
+<td>User/Role level</td>
+<td>Control what AWS principals can do</td>
+</tr>
+<tr>
+<td><strong>Bucket Policies</strong></td>
+<td>Bucket/Object level (JSON)</td>
+<td>Cross-account access, public access, enforce HTTPS</td>
+</tr>
+<tr>
+<td><strong>ACLs</strong></td>
+<td>Object/Bucket level</td>
+<td>Legacy, mostly disabled by default now</td>
+</tr>
+<tr>
+<td><strong>Block Public Access</strong></td>
+<td>Account/Bucket level</td>
+<td>Override all public grants — recommended ON</td>
+</tr>
+</tbody>
+</table>
+<h3>Bucket Policy Example — Enforce HTTPS</h3>
+<pre><code class="language-json">{
+  "Effect": "Deny",
+  "Principal": "*",
+  "Action": "s3:*",
+  "Resource": "arn:aws:s3:::my-bucket/*",
+  "Condition": {
+    "Bool": { "aws:SecureTransport": "false" }
+  }
+}
+</code></pre>
+<h3>Encryption</h3>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3Encryption-1.png" width="750"/>
+</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SSE-S3</strong></td>
+<td>AWS managed keys (AES-256). Default encryption.</td>
+</tr>
+<tr>
+<td><strong>SSE-KMS</strong></td>
+<td>AWS KMS managed keys. Audit trail via CloudTrail.</td>
+</tr>
+<tr>
+<td><strong>SSE-C</strong></td>
+<td>Customer-provided keys. AWS does NOT store the key.</td>
+</tr>
+<tr>
+<td><strong>Client-Side</strong></td>
+<td>Encrypt before uploading. You manage everything.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> SSE-KMS has API call limits (KMS quota). For high-throughput workloads, SSE-S3 is preferred.</p>
+</blockquote>
+<hr>
+<h2>🌐 Static Website Hosting</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3StaticHosting-1.png" width="750"/>
+</p>
+<h3>Setup Steps</h3>
+<ol>
+<li>Enable <strong>Static Website Hosting</strong> on the bucket</li>
+<li>Set <strong>Index document</strong> (e.g., <code>index.html</code>) and <strong>Error document</strong> (e.g., <code>error.html</code>)</li>
+<li>Disable <strong>Block Public Access</strong></li>
+<li>Attach a <strong>Bucket Policy</strong> to allow <code>s3:GetObject</code> for <code>"Principal": "*"</code></li>
+</ol>
+<h3>Website Endpoint Format</h3>
+<pre><code>http://&#x3C;bucket-name>.s3-website-&#x3C;region>.amazonaws.com
+# or
+http://&#x3C;bucket-name>.s3-website.&#x3C;region>.amazonaws.com
+</code></pre>
+<h3>CORS (Cross-Origin Resource Sharing)</h3>
+<p>Required when a web app hosted on one domain fetches resources from an S3 bucket on another domain.</p>
+<pre><code class="language-xml">&#x3C;CORSConfiguration>
+  &#x3C;CORSRule>
+    &#x3C;AllowedOrigin>https://myapp.com&#x3C;/AllowedOrigin>
+    &#x3C;AllowedMethod>GET&#x3C;/AllowedMethod>
+    &#x3C;AllowedHeader>*&#x3C;/AllowedHeader>
+  &#x3C;/CORSRule>
+&#x3C;/CORSConfiguration>
+</code></pre>
+<hr>
+<h2>🗂️ Versioning</h2>
+<ul>
+<li>Enabled at the <strong>bucket level</strong></li>
+<li>Once enabled, can only be <strong>suspended</strong> (not disabled)</li>
+<li>Each object version gets a unique <strong>Version ID</strong></li>
+<li>Deleting an object adds a <strong>Delete Marker</strong> (doesn't permanently delete)</li>
+<li>To permanently delete → specify the <strong>Version ID</strong></li>
+</ul>
+<h3>States</h3>
+<pre><code>Unversioned  →  Versioning Enabled  →  Versioning Suspended
+                      ↑_________________________________|
+                      (can re-enable from suspended)
+</code></pre>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> Versioning protects against accidental deletes and overwrites. MFA Delete adds an extra layer requiring MFA to delete versions.</p>
+</blockquote>
+<h3>MFA Delete</h3>
+<ul>
+<li>Requires <strong>MFA</strong> to permanently delete object versions or change versioning state</li>
+<li>Can only be enabled by the <strong>bucket owner (root account)</strong></li>
+<li>Must be enabled via <strong>CLI</strong> (not console)</li>
+</ul>
+<hr>
+<h2>🔒 Object Lock</h2>
+<p>Implements <strong>WORM</strong> (Write Once Read Many) model. Prevents objects from being deleted or overwritten.</p>
+<h3>Retention Modes</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Compliance</strong></td>
+<td>No one (including root) can delete/overwrite. Retention period cannot be shortened.</td>
+</tr>
+<tr>
+<td><strong>Governance</strong></td>
+<td>Users with special IAM permissions can override. Flexible for most use cases.</td>
+</tr>
+</tbody>
+</table>
+<h3>Legal Hold</h3>
+<ul>
+<li>Independent of retention period</li>
+<li>Any user with <code>s3:PutObjectLegalHold</code> permission can place/remove it</li>
+<li>Prevents deletion regardless of retention settings</li>
+</ul>
+<h3>Vault Lock (Glacier)</h3>
+<ul>
+<li>Similar to Object Lock but for <strong>S3 Glacier</strong></li>
+<li>Policy is locked and <strong>cannot be changed</strong> once set</li>
+<li>Used for compliance (HIPAA, SEC Rule 17a-4)</li>
+</ul>
+<hr>
+<h2>♻️ Lifecycle Policies</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3LifeCycle.png" width="750"/>
+</p>
+<p>Automate transitioning objects between storage classes or expiring them.</p>
+<h3>Transition Actions</h3>
+<pre><code>S3 Standard  →  Standard-IA / One Zone-IA  →  Glacier Instant  →  Glacier Flexible  →  Glacier Deep Archive
+   (0 days)         (min 30 days)              (min 90 days)       (min 90 days)         (min 180 days)
+</code></pre>
+<h3>Expiration Actions</h3>
+<ul>
+<li>Delete objects after X days</li>
+<li>Delete expired delete markers</li>
+<li>Delete incomplete multipart uploads</li>
+</ul>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> Minimum 30 days in Standard before transitioning to Standard-IA or One Zone-IA.</p>
+</blockquote>
+<hr>
+<h2>🔁 Replication</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>CRR</th>
+<th>SRR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Full Name</strong></td>
+<td>Cross-Region Replication</td>
+<td>Same-Region Replication</td>
+</tr>
+<tr>
+<td><strong>Use Case</strong></td>
+<td>Compliance, low-latency global access</td>
+<td>Log aggregation, live replication between accounts</td>
+</tr>
+<tr>
+<td><strong>Versioning Required</strong></td>
+<td>✅ Both source &#x26; destination</td>
+<td>✅ Both source &#x26; destination</td>
+</tr>
+<tr>
+<td><strong>Replication Scope</strong></td>
+<td>Across AWS regions</td>
+<td>Within same region</td>
+</tr>
+<tr>
+<td><strong>Delete Markers</strong></td>
+<td>Optional replication</td>
+<td>Optional replication</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 Replication is <strong>asynchronous</strong>. Only <strong>new objects</strong> are replicated after enabling (use S3 Batch Operations for existing objects).</p>
+</blockquote>
+<hr>
+<h2>⚡ Performance</h2>
+<h3>Baseline</h3>
+<ul>
+<li><strong>3,500 PUT/COPY/POST/DELETE</strong> requests/sec per prefix</li>
+<li><strong>5,500 GET/HEAD</strong> requests/sec per prefix</li>
+<li>No limit on number of prefixes</li>
+</ul>
+<h3>Optimization Techniques</h3>
+<table>
+<thead>
+<tr>
+<th>Technique</th>
+<th>Benefit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Multipart Upload</strong></td>
+<td>Parallelize uploads, required > 5 GB</td>
+</tr>
+<tr>
+<td><strong>S3 Transfer Acceleration</strong></td>
+<td>Uses CloudFront edge locations for faster uploads</td>
+</tr>
+<tr>
+<td><strong>Byte-Range Fetches</strong></td>
+<td>Parallelize downloads, partial file retrieval</td>
+</tr>
+<tr>
+<td><strong>S3 Select</strong></td>
+<td>Retrieve subset of data using SQL (reduces data transfer)</td>
+</tr>
+<tr>
+<td><strong>Prefix Spreading</strong></td>
+<td>Distribute objects across multiple prefixes for higher throughput</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>📡 Event Notifications</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3EventNotifications.png" width="750"/>
+</p>
+<p>S3 can trigger events to:</p>
+<ul>
+<li><strong>SNS</strong> — Fan-out notifications</li>
+<li><strong>SQS</strong> — Queue for processing</li>
+<li><strong>Lambda</strong> — Serverless processing</li>
+<li><strong>EventBridge</strong> — Advanced filtering, multiple destinations</li>
+</ul>
+<h3>Supported Events</h3>
+<pre><code>s3:ObjectCreated:*    s3:ObjectRemoved:*    s3:ObjectRestore:*
+s3:Replication:*      s3:LifecycleExpiration:*
+</code></pre>
+<hr>
+<h2>🔗 Pre-Signed URLs</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3PresignedURL-1.png" width="750"/>
+</p>
+<p>Grant <strong>temporary access</strong> to private objects without changing bucket policy.</p>
+<pre><code class="language-bash">aws s3 presign s3://my-bucket/my-file.jpg --expires-in 3600
+</code></pre>
+<ul>
+<li>Default expiry: <strong>3600 seconds</strong> (1 hour)</li>
+<li>Max expiry: <strong>7 days</strong> (using SDK), <strong>12 hours</strong> (using CLI)</li>
+<li>Inherits permissions of the <strong>IAM user/role</strong> that generated it</li>
+</ul>
+<hr>
+<h2>📊 Storage Classes — Detailed Comparison</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3StorageClasses-2.png" width="750"/>
+</p>
+<h3>At a Glance</h3>
+<table>
+<thead>
+<tr>
+<th>Storage Class</th>
+<th>Use Case</th>
+<th>Availability</th>
+<th>Durability</th>
+<th>Min Storage Duration</th>
+<th>Retrieval Fee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S3 Standard</strong></td>
+<td>Frequently accessed data</td>
+<td>99.99%</td>
+<td>99.999999999% (11 9s)</td>
+<td>None</td>
+<td>None</td>
+</tr>
+<tr>
+<td><strong>S3 Intelligent-Tiering</strong></td>
+<td>Unknown/changing access patterns</td>
+<td>99.9%</td>
+<td>11 9s</td>
+<td>None</td>
+<td>None (monitoring fee applies)</td>
+</tr>
+<tr>
+<td><strong>S3 Standard-IA</strong></td>
+<td>Infrequently accessed, rapid retrieval</td>
+<td>99.9%</td>
+<td>11 9s</td>
+<td>30 days</td>
+<td>Per GB retrieved</td>
+</tr>
+<tr>
+<td><strong>S3 One Zone-IA</strong></td>
+<td>Infrequent, non-critical, single AZ</td>
+<td>99.5%</td>
+<td>11 9s (single AZ)</td>
+<td>30 days</td>
+<td>Per GB retrieved</td>
+</tr>
+<tr>
+<td><strong>S3 Glacier Instant Retrieval</strong></td>
+<td>Archive, millisecond access</td>
+<td>99.9%</td>
+<td>11 9s</td>
+<td>90 days</td>
+<td>Per GB retrieved</td>
+</tr>
+<tr>
+<td><strong>S3 Glacier Flexible Retrieval</strong></td>
+<td>Archive, minutes to hours access</td>
+<td>99.99%</td>
+<td>11 9s</td>
+<td>90 days</td>
+<td>Per GB retrieved</td>
+</tr>
+<tr>
+<td><strong>S3 Glacier Deep Archive</strong></td>
+<td>Long-term archive, 12h retrieval</td>
+<td>99.99%</td>
+<td>11 9s</td>
+<td>180 days</td>
+<td>Per GB retrieved</td>
+</tr>
+<tr>
+<td><strong>S3 Express One Zone</strong></td>
+<td>High-performance, single AZ</td>
+<td>99.95%</td>
+<td>11 9s (single AZ)</td>
+<td>None</td>
+<td>None</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3>Retrieval Times</h3>
+<table>
+<thead>
+<tr>
+<th>Storage Class</th>
+<th>Retrieval Time</th>
+<th>Retrieval Options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S3 Standard</strong></td>
+<td>Immediate (ms)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>S3 Intelligent-Tiering</strong></td>
+<td>Immediate (ms)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>S3 Standard-IA</strong></td>
+<td>Immediate (ms)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>S3 One Zone-IA</strong></td>
+<td>Immediate (ms)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>S3 Glacier Instant Retrieval</strong></td>
+<td>Milliseconds</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>S3 Glacier Flexible Retrieval</strong></td>
+<td>1 min – 12 hours</td>
+<td>Expedited (1-5 min), Standard (3-5 hr), Bulk (5-12 hr)</td>
+</tr>
+<tr>
+<td><strong>S3 Glacier Deep Archive</strong></td>
+<td>12 – 48 hours</td>
+<td>Standard (12 hr), Bulk (48 hr)</td>
+</tr>
+<tr>
+<td><strong>S3 Express One Zone</strong></td>
+<td>Single-digit ms</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3>Intelligent-Tiering — Automatic Tiers</h3>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3IntelligentTiering.png" width="750"/>
+</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Access Pattern</th>
+<th>Monthly Monitoring Fee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frequent Access</td>
+<td>Default</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Infrequent Access</td>
+<td>Not accessed for 30 days</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Archive Instant Access</td>
+<td>Not accessed for 90 days</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Archive Access</td>
+<td>Not accessed for 90–730 days (opt-in)</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Deep Archive Access</td>
+<td>Not accessed for 180–730 days (opt-in)</td>
+<td>✅ Yes</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h3>Cost Comparison (Approximate, us-east-1)</h3>
+<table>
+<thead>
+<tr>
+<th>Storage Class</th>
+<th>Storage Cost (per GB/month)</th>
+<th>Retrieval Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S3 Standard</td>
+<td>$0.023</td>
+<td>Free</td>
+</tr>
+<tr>
+<td>S3 Intelligent-Tiering</td>
+<td>$0.023 (frequent) / $0.0125 (infrequent)</td>
+<td>Free</td>
+</tr>
+<tr>
+<td>S3 Standard-IA</td>
+<td>$0.0125</td>
+<td>$0.01/GB</td>
+</tr>
+<tr>
+<td>S3 One Zone-IA</td>
+<td>$0.01</td>
+<td>$0.01/GB</td>
+</tr>
+<tr>
+<td>S3 Glacier Instant</td>
+<td>$0.004</td>
+<td>$0.03/GB</td>
+</tr>
+<tr>
+<td>S3 Glacier Flexible</td>
+<td>$0.0036</td>
+<td>$0.01–$0.03/GB</td>
+</tr>
+<tr>
+<td>S3 Glacier Deep Archive</td>
+<td>$0.00099</td>
+<td>$0.02/GB</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ Prices are approximate and subject to change. Always check <a href="https://aws.amazon.com/s3/pricing/">AWS Pricing</a> for current rates.</p>
+</blockquote>
+<hr>
+<h2>🧰 Additional Features</h2>
+<h3>S3 Select &#x26; Glacier Select</h3>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/0700-SIMPLE_STORAGE_SERVICE(S3)/00_LEARNINGAIDS/S3andGlacierSelect.png" width="750"/>
+</p>
+<ul>
+<li>Retrieve subset of data using SQL on individual objects (CSV, JSON, Parquet)</li>
+<li>Reduces data transfer and cost — filtering happens server-side</li>
+</ul>
+<h3>S3 Access Points</h3>
+<ul>
+<li>Simplify access management for shared datasets</li>
+<li>Each access point has its own DNS name and policy</li>
+<li>Can restrict access to specific VPCs</li>
+</ul>
+<h3>S3 Object Lambda</h3>
+<ul>
+<li>Transform objects on-the-fly as they are retrieved</li>
+<li>Use cases: redact PII, convert formats, resize images</li>
+<li>No need to store multiple versions of the same object</li>
+</ul>
+<h3>S3 Batch Operations</h3>
+<ul>
+<li>Perform bulk operations on billions of objects</li>
+<li>Operations: Copy, Invoke Lambda, Restore, Tag, ACL, Object Lock</li>
+<li>Uses a manifest (CSV or S3 Inventory report)</li>
+</ul>
+<h3>S3 Inventory</h3>
+<ul>
+<li>Audit and report on objects and their metadata</li>
+<li>Output: CSV, ORC, or Parquet</li>
+<li>Scheduled: daily or weekly</li>
+</ul>
+<h3>S3 Storage Lens</h3>
+<ul>
+<li>Organization-wide visibility into storage usage and activity</li>
+<li>29+ usage and activity metrics</li>
+<li>Interactive dashboard in the console</li>
+</ul>
+<hr>
+<h2>📋 Quick Reference — Exam Tips</h2>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Key Point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Durability</td>
+<td>Always <strong>11 9s</strong> for all classes (except One Zone-IA — same durability but single AZ risk)</td>
+</tr>
+<tr>
+<td>Availability</td>
+<td>Standard = 99.99%, IA = 99.9%, One Zone-IA = 99.5%</td>
+</tr>
+<tr>
+<td>Min Billing</td>
+<td>Standard-IA &#x26; One Zone-IA = <strong>30 days</strong>, Glacier = <strong>90 days</strong>, Deep Archive = <strong>180 days</strong></td>
+</tr>
+<tr>
+<td>Multipart Upload</td>
+<td>Required > 5 GB, recommended > 100 MB</td>
+</tr>
+<tr>
+<td>Transfer Acceleration</td>
+<td>Uses <strong>CloudFront edge</strong> locations</td>
+</tr>
+<tr>
+<td>Pre-signed URL</td>
+<td>Temporary access using <strong>creator's permissions</strong></td>
+</tr>
+<tr>
+<td>Object Lock</td>
+<td>Requires <strong>versioning enabled</strong></td>
+</tr>
+<tr>
+<td>MFA Delete</td>
+<td>Only <strong>root account</strong> via <strong>CLI</strong></td>
+</tr>
+<tr>
+<td>Replication</td>
+<td>Only <strong>new objects</strong> after enabling; versioning required</td>
+</tr>
+<tr>
+<td>S3 Select</td>
+<td>SQL queries on <strong>individual objects</strong> (CSV, JSON, Parquet)</td>
+</tr>
+<tr>
+<td>Athena</td>
+<td>SQL queries on <strong>S3 data lake</strong> (multiple objects)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p align="center">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/b/bc/Amazon-S3-Logo.svg" width="60"/><br/>
+  <em>Amazon S3 — Store and retrieve any amount of data, at any time, from anywhere.</em>
+</p>
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-S3-Complete-Guide","title":"AWS-S3-Complete-Guide","date":"","excerpt":"","tags":[],"content":"$3"}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"1T09iAUWvs2G2EyW04Lbp"}
+4:["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/0rpi9rj9in923.js","async":true}]
+5:["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/1l_jegyy81nx5.js","async":true}]
+6:["$","$L7",null,{"children":["$","$8",null,{"name":"Next.MetadataOutlet","children":"$@9"}]}]
+9:null
