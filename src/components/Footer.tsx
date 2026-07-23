@@ -4,7 +4,7 @@ import { Mail, Phone, Heart } from "lucide-react";
 export default function Footer() {
   return (
     <footer style={{ borderTop: "1px solid var(--border)" }}>
-      <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold gradient-text">&lt;AM/&gt;</span>
           <span className="text-sm" style={{ color: "var(--text-muted)" }}>

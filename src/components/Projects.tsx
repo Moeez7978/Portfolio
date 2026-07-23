@@ -34,7 +34,7 @@ export default function Projects() {
     <section id="projects" className="py-28 relative">
       <div className="absolute top-20 left-1/2 w-96 h-96 rounded-full blur-[180px] opacity-10" style={{ background: "rgba(99, 102, 241, 0.2)" }} />
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

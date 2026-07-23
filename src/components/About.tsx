@@ -2,6 +2,8 @@
 import { motion } from "framer-motion";
 import { Cloud, Code, Server, GraduationCap } from "lucide-react";
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 const stats = [
   { value: "3+", label: "Years Experience" },
   { value: "4", label: "Certifications" },
@@ -22,7 +24,7 @@ export default function About() {
       {/* Background accent */}
       <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-[150px] opacity-30" style={{ background: "rgba(6, 182, 212, 0.1)" }} />
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -52,7 +54,7 @@ export default function About() {
               {/* Image placeholder with gradient border */}
               <div className="gradient-border rounded-2xl">
                 <div className="w-full aspect-[4/5] rounded-2xl overflow-hidden" style={{ background: "var(--bg-secondary)" }}>
-                  <img src="/profilebg.png" alt="Abdul Moeez" className="w-full h-full object-cover" />
+                  <img src={`${basePath}/profilebg.png`} alt="Abdul Moeez" className="w-full h-full object-cover" />
                 </div>
               </div>
               {/* Experience badge */}
@@ -110,7 +112,7 @@ export default function About() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {stats.map((s, i) => (
                 <motion.div
                   key={i}

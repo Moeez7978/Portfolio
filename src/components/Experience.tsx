@@ -72,7 +72,7 @@ export default function Experience() {
     <section id="experience" className="py-28 relative">
       <div className="absolute top-1/2 right-0 w-72 h-72 rounded-full blur-[150px] opacity-20" style={{ background: "rgba(16, 185, 129, 0.15)" }} />
 
-      <div className="max-w-5xl mx-auto px-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -88,8 +88,8 @@ export default function Experience() {
         </motion.div>
 
         <div className="relative">
-          {/* Timeline line with gradient */}
-          <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-accent via-emerald to-amber opacity-30" />
+          {/* Timeline line */}
+          <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-accent via-emerald to-amber opacity-30" />
 
           <div className="space-y-12">
             {experiences.map((exp, i) => (
@@ -102,7 +102,7 @@ export default function Experience() {
                 className={`relative flex flex-col md:flex-row gap-8 ${i % 2 === 0 ? "md:flex-row-reverse" : ""}`}
               >
                 {/* Timeline dot */}
-                <div className="absolute left-8 md:left-1/2 -translate-x-1/2 top-8">
+                <div className="absolute left-4 md:left-1/2 -translate-x-1/2 top-8">
                   <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${exp.color} shadow-lg`} />
                 </div>
 
@@ -110,7 +110,7 @@ export default function Experience() {
                 <div className="hidden md:block md:w-1/2" />
 
                 {/* Card */}
-                <div className="ml-16 md:ml-0 md:w-1/2">
+                <div className="ml-10 md:ml-0 md:w-1/2">
                   <div className="card p-6 rounded-2xl relative overflow-hidden group">
                     {/* Top gradient accent */}
                     <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${exp.color}`} />

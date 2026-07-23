@@ -9,7 +9,7 @@ export default function Contact() {
       <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[180px] opacity-10" style={{ background: "rgba(99, 102, 241, 0.3)" }} />
       <div className="absolute bottom-0 right-1/4 w-72 h-72 rounded-full blur-[140px] opacity-10" style={{ background: "rgba(6, 182, 212, 0.3)" }} />
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -79,8 +79,8 @@ export default function Contact() {
               </div>
               <div>
                 <p className="text-xs" style={{ color: "var(--text-muted)" }}>LinkedIn</p>
-                <a href="https://www.linkedin.com/in/abdul-moeez-64760529b/" target="_blank" className="font-semibold text-sm hover:text-emerald transition-colors" style={{ color: "var(--text-primary)" }}>
-                  linkedin.com/in/abdul-moeez-64760529b/
+                <a href="https://www.linkedin.com/in/abdul-moeez-64760529b/" target="_blank" className="font-semibold text-sm hover:text-emerald transition-colors truncate block max-w-[180px]" style={{ color: "var(--text-primary)" }}>
+                  linkedin.com/in/abdul-moeez
                 </a>
               </div>
             </div>

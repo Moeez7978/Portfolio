@@ -41,7 +41,7 @@ export default function Hero() {
         </div>
       </motion.div>
 
-      <div className="max-w-7xl mx-auto px-6 py-32 grid lg:grid-cols-2 gap-16 items-center relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-28 grid lg:grid-cols-2 gap-10 items-center relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
@@ -61,7 +61,7 @@ export default function Hero() {
             </span>
           </motion.div>
 
-          <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] mb-6" style={{ color: "var(--text-primary)" }}>
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold leading-[1.1] mb-6" style={{ color: "var(--text-primary)" }}>
             Hi, I&apos;m{" "}
             <span className="gradient-text">Abdul</span>
             <br />
@@ -83,7 +83,7 @@ export default function Hero() {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-wrap gap-4 mb-10">
+          <div className="flex flex-wrap gap-3 mb-8">
             <a
               href="#contact"
               className="group px-7 py-3.5 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-semibold shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-105 transition-all duration-300 flex items-center gap-2"
@@ -102,7 +102,7 @@ export default function Hero() {
           </div>
 
           {/* Social links */}
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Find me:</span>
             <a href="https://www.linkedin.com/in/abdul-moeez-64760529b/" target="_blank" className="p-2.5 rounded-xl transition-all duration-300 hover:scale-110 hover:shadow-lg" style={{ background: "var(--bg-tertiary)" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{ color: "var(--text-secondary)" }}><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
@@ -121,7 +121,7 @@ export default function Hero() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="flex justify-center relative"
+          className="flex justify-center relative hidden sm:flex"
         >
           {/* Outer rotating ring */}
           <div className="absolute inset-0 flex items-center justify-center">
@@ -148,7 +148,7 @@ export default function Hero() {
 
           {/* Profile image */}
           <div className="w-56 h-56 md:w-72 md:h-72 rounded-full overflow-hidden relative z-10 glow" style={{ border: "3px solid var(--border)" }}>
-            <img src="/profilepic.png" alt="Abdul Moeez" className="w-full h-full object-cover" />
+            <img src={`${basePath}/profilepic.png`} alt="Abdul Moeez" className="w-full h-full object-cover" />
           </div>
 
           {/* Floating stat cards */}

@@ -32,10 +32,10 @@ export default function Navbar() {
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 100 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled ? "glass py-3 shadow-lg" : "py-5"
+        scrolled ? "glass py-3 shadow-lg" : "py-4"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
         <a href="#home" className="text-2xl font-bold gradient-text tracking-tight">
           &lt;AM/&gt;
         </a>

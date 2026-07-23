@@ -64,7 +64,7 @@ export default function Skills() {
     <section id="skills" className="py-28 relative">
       <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full blur-[150px] opacity-20" style={{ background: "rgba(99, 102, 241, 0.15)" }} />
 
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
