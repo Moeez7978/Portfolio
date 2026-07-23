@@ -1,5 +1,5 @@
 1:"$Sreact.fragment"
-2:I[90011,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js","/Portfolio/_next/static/chunks/3i_30isf9nr_l.js","/Portfolio/_next/static/chunks/1p69tdcxrlo11.js"],"default"]
+2:I[90011,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js","/Portfolio/_next/static/chunks/3i_30isf9nr_l.js","/Portfolio/_next/static/chunks/0uci2olp6eh-d.js"],"default"]
 7:I[97367,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"OutletBoundary"]
 8:"$Sreact.suspense"
 3:T4c13,<h1><img src="https://upload.wikimedia.org/wikipedia/commons/b/bc/Amazon-S3-Logo.svg" width="40" align="center"/> Amazon S3 — Complete Guide for AWS Solutions Architect Associate</h1>
@@ -680,8 +680,8 @@ s3:Replication:*      s3:LifecycleExpiration:*
   <img src="https://upload.wikimedia.org/wikipedia/commons/b/bc/Amazon-S3-Logo.svg" width="60"/><br/>
   <em>Amazon S3 — Store and retrieve any amount of data, at any time, from anywhere.</em>
 </p>
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-S3-Complete-Guide","title":"AWS-S3-Complete-Guide","date":"","excerpt":"","tags":[],"content":"$3"}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"BNLrOmsD20X87Gx5tWGZa"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-S3-Complete-Guide","title":"AWS-S3-Complete-Guide","date":"","excerpt":"","tags":[],"content":"$3"}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"iG8ibd18-56ux322gyo81"}
 4:["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/3i_30isf9nr_l.js","async":true}]
-5:["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/1p69tdcxrlo11.js","async":true}]
+5:["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/0uci2olp6eh-d.js","async":true}]
 6:["$","$L7",null,{"children":["$","$8",null,{"name":"Next.MetadataOutlet","children":"$@9"}]}]
 9:null
