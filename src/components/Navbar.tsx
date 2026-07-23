@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Menu, X, Sun, Moon } from "lucide-react";
+import Link from "next/link";
 import { useTheme } from "./ThemeProvider";
 
 const links = [
@@ -40,16 +41,27 @@ export default function Navbar() {
         </a>
 
         <div className="hidden lg:flex items-center gap-1">
-          {links.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 hover:bg-[var(--bg-tertiary)]"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              {l.label}
-            </a>
-          ))}
+          {links.map((l) =>
+            l.href.startsWith("#") ? (
+              <a
+                key={l.href}
+                href={l.href}
+                className="relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 hover:bg-[var(--bg-tertiary)]"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {l.label}
+              </a>
+            ) : (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="relative px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 hover:bg-[var(--bg-tertiary)]"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {l.label}
+              </Link>
+            )
+          )}
         </div>
 
         <div className="hidden lg:flex items-center gap-3">
@@ -91,17 +103,29 @@ export default function Navbar() {
           animate={{ opacity: 1, y: 0 }}
           className="lg:hidden glass mt-3 mx-4 rounded-2xl p-5 flex flex-col gap-1"
         >
-          {links.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              onClick={() => setMobileOpen(false)}
-              className="px-4 py-3 rounded-xl text-sm font-medium transition-all hover:bg-[var(--bg-tertiary)]"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              {l.label}
-            </a>
-          ))}
+          {links.map((l) =>
+            l.href.startsWith("#") ? (
+              <a
+                key={l.href}
+                href={l.href}
+                onClick={() => setMobileOpen(false)}
+                className="px-4 py-3 rounded-xl text-sm font-medium transition-all hover:bg-[var(--bg-tertiary)]"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {l.label}
+              </a>
+            ) : (
+              <Link
+                key={l.href}
+                href={l.href}
+                onClick={() => setMobileOpen(false)}
+                className="px-4 py-3 rounded-xl text-sm font-medium transition-all hover:bg-[var(--bg-tertiary)]"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {l.label}
+              </Link>
+            )
+          )}
           <a
             href="#contact"
             className="mt-2 px-5 py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold text-center"

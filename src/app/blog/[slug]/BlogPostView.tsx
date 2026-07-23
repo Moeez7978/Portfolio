@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, Tag } from "lucide-react";
+import Link from "next/link";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,9 +14,9 @@ export default function BlogPostView({ post }: { post: BlogPost }) {
       <main className="relative z-10 min-h-screen pt-32 pb-20">
         <article className="max-w-3xl mx-auto px-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <a href="/blog" className="inline-flex items-center gap-2 text-sm mb-8 hover:text-primary transition-colors" style={{ color: "var(--text-muted)" }}>
+            <Link href="/blog" className="inline-flex items-center gap-2 text-sm mb-8 hover:text-primary transition-colors" style={{ color: "var(--text-muted)" }}>
               <ArrowLeft size={16} /> Back to Blog
-            </a>
+            </Link>
 
             <h1 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: "var(--text-primary)" }}>
               {post.title}

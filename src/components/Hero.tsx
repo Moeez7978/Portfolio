@@ -2,6 +2,8 @@
 import { motion } from "framer-motion";
 import { ArrowDown, Download, Mail, Phone, Sparkles, Zap, Shield } from "lucide-react";
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export default function Hero() {
   return (
     <section id="home" className="min-h-screen flex items-center justify-center relative overflow-hidden">
@@ -90,7 +92,7 @@ export default function Hero() {
               Let&apos;s Build Together
             </a>
             <a
-              href="/resume.pdf"
+              href={`${basePath}/resume.pdf`}
               download="Abdul_Moeez_Resume.pdf"
               className="px-7 py-3.5 rounded-xl font-semibold flex items-center gap-2 transition-all duration-300 hover:scale-105 gradient-border"
               style={{ background: "var(--bg-secondary)", color: "var(--text-primary)" }}

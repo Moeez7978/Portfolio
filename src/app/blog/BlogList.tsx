@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { Calendar, ArrowLeft, Tag } from "lucide-react";
+import Link from "next/link";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -17,9 +18,9 @@ export default function BlogList({ posts }: { posts: BlogPost[] }) {
             animate={{ opacity: 1, y: 0 }}
             className="mb-12"
           >
-            <a href="/" className="inline-flex items-center gap-2 text-sm mb-6 hover:text-primary transition-colors" style={{ color: "var(--text-muted)" }}>
+            <Link href="/" className="inline-flex items-center gap-2 text-sm mb-6 hover:text-primary transition-colors" style={{ color: "var(--text-muted)" }}>
               <ArrowLeft size={16} /> Back to Home
-            </a>
+            </Link>
             <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: "var(--text-primary)" }}>
               My <span className="gradient-text">Blog</span>
             </h1>
@@ -35,14 +36,14 @@ export default function BlogList({ posts }: { posts: BlogPost[] }) {
           ) : (
             <div className="grid gap-6">
               {posts.map((post, i) => (
-                <motion.a
+                <motion.div
                   key={post.slug}
-                  href={`/blog/${post.slug}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
                   className="card p-6 rounded-2xl group block"
                 >
+                  <Link href={`/blog/${post.slug}`} className="block">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                       <h2 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors" style={{ color: "var(--text-primary)" }}>
@@ -66,7 +67,8 @@ export default function BlogList({ posts }: { posts: BlogPost[] }) {
                       <span className="text-primary text-lg">→</span>
                     </div>
                   </div>
-                </motion.a>
+                  </Link>
+                </motion.div>
               ))}
             </div>
           )}
