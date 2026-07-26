@@ -16,7 +16,7 @@ export default function ParticleBackground() {
     const particles: { x: number; y: number; vx: number; vy: number; size: number; opacity: number }[] = [];
 
     const resize = () => {
-      canvas.width = window.innerWidth;
+      canvas.width = document.documentElement.clientWidth;
       canvas.height = window.innerHeight;
     };
     resize();

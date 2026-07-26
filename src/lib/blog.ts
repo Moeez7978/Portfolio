@@ -24,11 +24,20 @@ export function getAllPosts(): BlogPost[] {
       const slug = file.replace(/\.md$/, "");
       const raw = fs.readFileSync(path.join(blogsDir, file), "utf-8");
       const { data, content } = matter(raw);
+      const plainExcerpt = content
+        .replace(/<!--.*?-->/gs, "")
+        .replace(/<[^>]+>/g, "")
+        .replace(/!\[.*?\]\(.*?\)/g, "")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/^#{1,6}\s+/gm, "")
+        .replace(/[*_`>|]/g, "")
+        .replace(/\n+/g, " ")
+        .trim();
       return {
         slug,
         title: data.title || slug,
         date: data.date || "",
-        excerpt: data.excerpt || content.slice(0, 150) + "...",
+        excerpt: data.excerpt || plainExcerpt.slice(0, 160) + "...",
         tags: data.tags || [],
         content,
       };

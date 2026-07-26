@@ -61,7 +61,7 @@ const softSkills = [
 
 export default function Skills() {
   return (
-    <section id="skills" className="py-28 relative">
+    <section id="skills" className="py-20 sm:py-28 relative">
       <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full blur-[150px] opacity-20" style={{ background: "rgba(99, 102, 241, 0.15)" }} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -74,7 +74,7 @@ export default function Skills() {
           <span className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-accent mb-4" style={{ background: "var(--bg-tertiary)" }}>
             WHAT I DO
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: "var(--text-primary)" }}>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: "var(--text-primary)" }}>
             My <span className="gradient-text">Skills</span>
           </h2>
           <p className="max-w-2xl mx-auto" style={{ color: "var(--text-muted)" }}>

@@ -33,7 +33,7 @@ const marqueeItems = [...skills, ...skills];
 
 export default function Certifications() {
   return (
-    <section className="py-28 relative overflow-hidden">
+    <section className="py-20 sm:py-28 relative overflow-hidden">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -44,7 +44,7 @@ export default function Certifications() {
           <span className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold text-rose mb-4" style={{ background: "var(--bg-tertiary)" }}>
             CREDENTIALS
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: "var(--text-primary)" }}>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: "var(--text-primary)" }}>
             <span className="gradient-text">Certifications</span>
           </h2>
         </motion.div>
