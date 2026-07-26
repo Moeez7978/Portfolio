@@ -25,7 +25,7 @@ export function getAllPosts(): BlogPost[] {
       const raw = fs.readFileSync(path.join(blogsDir, file), "utf-8");
       const { data, content } = matter(raw);
       const plainExcerpt = content
-        .replace(/<!--.*?-->/gs, "")
+        .replace(/<!--[\s\S]*?-->/g, "")
         .replace(/<[^>]+>/g, "")
         .replace(/!\[.*?\]\(.*?\)/g, "")
         .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
