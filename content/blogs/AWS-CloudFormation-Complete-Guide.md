@@ -1,3 +1,10 @@
+---
+title: "AWS CloudFormation — Complete Guide for AWS Solutions Architect Associate"
+date: "2025-04-10"
+excerpt: "A complete guide to AWS CloudFormation covering templates, stacks, change sets, drift detection, and best practices for infrastructure as code."
+tags: ["AWS", "CloudFormation", "IaC", "DevOps", "Architecture"]
+---
+
 # <img src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" width="40" align="center"/> AWS CloudFormation — Complete Guide for AWS Solutions Architect Associate
 
 > **AWS CloudFormation** is AWS's Infrastructure as Code (IaC) service that lets you model, provision, and manage AWS and third-party resources by treating infrastructure as code — declaratively, repeatably, and safely.

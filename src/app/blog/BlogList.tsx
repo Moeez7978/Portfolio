@@ -23,9 +23,8 @@ function tagStyle(tag: string) {
   return TAG_STYLES[tag] ?? { bg: "rgba(100,116,139,0.15)", color: "#475569" };
 }
 
-function readingTime(excerpt: string) {
-  const words = excerpt.split(" ").length;
-  return Math.max(1, Math.round(words / 200));
+function readingTime(post: BlogPost) {
+  return post.readTime;
 }
 
 const CARD_ACCENTS = [
@@ -98,7 +97,7 @@ export default function BlogList({ posts }: { posts: BlogPost[] }) {
                                 <Calendar size={11} /> {post.date}
                               </span>
                               <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
-                                <Clock size={11} /> {readingTime(post.excerpt)} min read
+                                <Clock size={11} /> {readingTime(post)} min read
                               </span>
                             </div>
 

@@ -14,6 +14,7 @@ export interface BlogPost {
   excerpt: string;
   tags: string[];
   content: string;
+  readTime: number;
 }
 
 export function getAllPosts(): BlogPost[] {
@@ -33,6 +34,7 @@ export function getAllPosts(): BlogPost[] {
         .replace(/[*_`>|]/g, "")
         .replace(/\n+/g, " ")
         .trim();
+      const wordCount = content.trim().split(/\s+/).length;
       return {
         slug,
         title: data.title || slug,
@@ -40,6 +42,7 @@ export function getAllPosts(): BlogPost[] {
         excerpt: data.excerpt || plainExcerpt.slice(0, 160) + "...",
         tags: data.tags || [],
         content,
+        readTime: Math.max(1, Math.round(wordCount / 200)),
       };
     })
     .sort((a, b) => (a.date > b.date ? -1 : 1));
