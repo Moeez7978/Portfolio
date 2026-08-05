@@ -1,6 +1,5 @@
 ---
 title: "Amazon ELB — Complete Guide (Part 3): Security, Monitoring, PrivateLink & Exam Cheat Sheet"
-date: "2025-05-10"
 excerpt: "Part 3 of the ELB series covers security groups, WAF, PrivateLink, CloudWatch metrics, access logs, pricing, advanced architectural patterns, and a complete exam cheat sheet."
 tags: ["AWS", "ELB", "Security", "Networking", "Architecture"]
 ---

@@ -1,6 +1,5 @@
 ---
 title: "Amazon ELB — Complete Guide (Part 1): Architecture, Types & Core Concepts"
-date: "2025-04-20"
 excerpt: "A deep dive into AWS Elastic Load Balancing — covering ALB, NLB, GWLB, and CLB architecture, DNS flow, listener rules, and when to use each type."
 tags: ["AWS", "ELB", "Architecture", "Networking", "DevOps"]
 ---

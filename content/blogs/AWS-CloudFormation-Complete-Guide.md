@@ -1,6 +1,5 @@
 ---
 title: "AWS CloudFormation — Complete Guide for AWS Solutions Architect Associate"
-date: "2025-04-10"
 excerpt: "A complete guide to AWS CloudFormation covering templates, stacks, change sets, drift detection, and best practices for infrastructure as code."
 tags: ["AWS", "CloudFormation", "IaC", "DevOps", "Architecture"]
 ---

@@ -1,6 +1,5 @@
 ---
 title: "Amazon ELB — Complete Guide (Part 2): Cross-Zone LB, Health Checks, Sticky Sessions & SSL/TLS"
-date: "2025-05-01"
 excerpt: "Part 2 of the ELB series covers cross-zone load balancing, health check configuration, sticky sessions, SSL/TLS termination with SNI, and connection draining."
 tags: ["AWS", "ELB", "Networking", "SSL", "DevOps"]
 ---
