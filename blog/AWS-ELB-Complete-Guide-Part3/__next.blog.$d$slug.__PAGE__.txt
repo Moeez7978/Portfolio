@@ -923,7 +923,7 @@ Trap 8: "Deregistration Delay = Connection Draining"
 </tr>
 </tbody>
 </table>
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-ELB-Complete-Guide-Part3","title":"Amazon ELB — Complete Guide (Part 3): Security, Monitoring, PrivateLink & Exam Cheat Sheet","date":"2025-05-10","excerpt":"Part 3 of the ELB series covers security groups, WAF, PrivateLink, CloudWatch metrics, access logs, pricing, advanced architectural patterns, and a complete exam cheat sheet.","tags":["AWS","ELB","Security","Networking","Architecture"],"content":"$3","readTime":16}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"MspfnuwxqKiRi8OONZgfX"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-ELB-Complete-Guide-Part3","title":"Amazon ELB — Complete Guide (Part 3): Security, Monitoring, PrivateLink & Exam Cheat Sheet","date":"2026-08-05","excerpt":"Part 3 of the ELB series covers security groups, WAF, PrivateLink, CloudWatch metrics, access logs, pricing, advanced architectural patterns, and a complete exam cheat sheet.","tags":["AWS","ELB","Security","Networking","Architecture"],"content":"$3","readTime":16}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"Fxna1GtI7QQq3So09BjA8"}
 4:["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/1mwkoqsph5j67.js","async":true}]
 5:["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/2fjmpru07ey8_.js","async":true}]
 6:["$","$L7",null,{"children":["$","$8",null,{"name":"Next.MetadataOutlet","children":"$@9"}]}]

@@ -736,7 +736,7 @@ Use case: Canary deployments, A/B testing, blue/green deployments
 </blockquote>
 <hr>
 <p><em>Continued in Part 2 → Cross-Zone Load Balancing, Health Checks, Sticky Sessions, SSL/TLS, and Connection Draining</em></p>
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-ELB-Complete-Guide-Part1","title":"Amazon ELB — Complete Guide (Part 1): Architecture, Types & Core Concepts","date":"2025-04-20","excerpt":"A deep dive into AWS Elastic Load Balancing — covering ALB, NLB, GWLB, and CLB architecture, DNS flow, listener rules, and when to use each type.","tags":["AWS","ELB","Architecture","Networking","DevOps"],"content":"$3","readTime":14}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"MspfnuwxqKiRi8OONZgfX"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-ELB-Complete-Guide-Part1","title":"Amazon ELB — Complete Guide (Part 1): Architecture, Types & Core Concepts","date":"2026-08-05","excerpt":"A deep dive into AWS Elastic Load Balancing — covering ALB, NLB, GWLB, and CLB architecture, DNS flow, listener rules, and when to use each type.","tags":["AWS","ELB","Architecture","Networking","DevOps"],"content":"$3","readTime":14}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"Fxna1GtI7QQq3So09BjA8"}
 4:["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/1mwkoqsph5j67.js","async":true}]
 5:["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/2fjmpru07ey8_.js","async":true}]
 6:["$","$L7",null,{"children":["$","$8",null,{"name":"Next.MetadataOutlet","children":"$@9"}]}]
