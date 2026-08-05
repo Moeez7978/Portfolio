@@ -637,7 +637,7 @@ s3:Replication:*      s3:LifecycleExpiration:*
   <br/><br/>
   <em>📸 Architecture diagrams sourced from <a href="https://learn.cantrill.io">Adrian Cantrill's AWS SAA-C03 course</a> — highly recommended for anyone serious about AWS certifications.</em>
 </p>
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-S3-Complete-Guide","title":"Amazon S3 — The Storage Layer Every Scalable Business Needs","date":"2025-07-01","excerpt":"Most businesses are hemorrhaging money on storage they don't control, can't scale, and can't secure. Here's how Amazon S3 solves every one of those problems — and why it's the backbone of modern cloud architecture.","tags":["AWS","S3","Cloud Storage","Architecture","DevOps"],"content":"$3"}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"ub8qLouCN0cA2r5a5Z098"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-S3-Complete-Guide","title":"Amazon S3 — The Storage Layer Every Scalable Business Needs","date":"2025-07-01","excerpt":"Most businesses are hemorrhaging money on storage they don't control, can't scale, and can't secure. Here's how Amazon S3 solves every one of those problems — and why it's the backbone of modern cloud architecture.","tags":["AWS","S3","Cloud Storage","Architecture","DevOps"],"content":"$3","readTime":12}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"oTkhDdTSvJB9ubf7q84cT"}
 4:["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/1mwkoqsph5j67.js","async":true}]
 5:["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/2fjmpru07ey8_.js","async":true}]
 6:["$","$L7",null,{"children":["$","$8",null,{"name":"Next.MetadataOutlet","children":"$@9"}]}]

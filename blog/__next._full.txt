@@ -2,7 +2,7 @@
 2:I[39756,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"default"]
 3:I[37457,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"default"]
 4:I[43880,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"Analytics"]
-5:I[50077,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js","/Portfolio/_next/static/chunks/1vp4o988nnn9s.js","/Portfolio/_next/static/chunks/2fjmpru07ey8_.js"],"default"]
+5:I[50077,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js","/Portfolio/_next/static/chunks/40m24h6w96dbs.js","/Portfolio/_next/static/chunks/2fjmpru07ey8_.js"],"default"]
 10:I[68027,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"default",1]
 :HL["/Portfolio/_next/static/chunks/0ts6-jl8eivfa.css","style"]
 :HL["/Portfolio/_next/static/media/797e433ab948586e-s.p.0r6juujl39pe6.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
@@ -416,7 +416,1667 @@ Organization-wide visibility into storage usage across all accounts and regions.
   <br/><br/>
   <em>📸 Architecture diagrams sourced from <a href="https://learn.cantrill.io">Adrian Cantrill's AWS SAA-C03 course</a> — highly recommended for anyone serious about AWS certifications.</em>
 </p>
-7:T72ef,# <img src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" width="40" align="center"/> AWS CloudFormation — Complete Guide for AWS Solutions Architect Associate
+7:T70ad,
+# <img src="https://icon.icepanel.io/AWS/svg/Networking-Content-Delivery/Elastic-Load-Balancing.svg" width="40" align="center"/> Amazon ELB — Complete Guide for AWS Solutions Architect Associate
+### Part 3 of 3 — Security, Monitoring, PrivateLink, Pricing & Exam Cheat Sheet
+
+---
+
+## 🔒 ELB Security Architecture
+
+### Security Groups (ALB Only)
+
+ALB supports **Security Groups**. NLB and GWLB do **not** support security groups — they use NACLs and route table controls instead.
+
+```
+ALB Security Group Architecture:
+─────────────────────────────────────────────────────────────────
+  Internet
+      │
+      ▼
+  ALB Security Group (sg-alb):
+    Inbound:  Allow TCP 443 from 0.0.0.0/0 (HTTPS from internet)
+    Inbound:  Allow TCP 80  from 0.0.0.0/0 (HTTP, redirect to HTTPS)
+    Outbound: Allow TCP 8080 to sg-app (to reach app servers)
+      │
+      ▼
+  EC2 Security Group (sg-app):
+    Inbound:  Allow TCP 8080 from sg-alb ONLY
+              (NOT from 0.0.0.0/0 — backend never exposed directly)
+    Outbound: Allow all (or restrict as needed)
+
+Key: Backend EC2s reference the ALB security group as source
+     This ensures ONLY the ALB can reach the backend
+     Direct internet access to EC2 is blocked ✅
+```
+
+### NLB — No Security Groups
+
+```
+NLB Security Model:
+  NLB does NOT have security groups
+  Traffic control is done via:
+    ├── Target Security Groups (EC2 SGs must allow NLB traffic)
+    ├── Network ACLs (subnet level)
+    └── Route Tables
+
+  ⚠️  NLB preserves client IP → EC2 SG must allow the CLIENT IP range
+      (not the NLB IP, because NLB passes through the real client IP)
+
+  For internet-facing NLB:
+    EC2 SG Inbound: Allow TCP <port> from 0.0.0.0/0
+    (or restrict to known client IP ranges)
+```
+
+### WAF Integration (ALB Only)
+
+```
+AWS WAF + ALB:
+  ┌─────────────────────────────────────────────────────┐
+  │  Internet ──► WAF Web ACL ──► ALB ──► Targets       │
+  │                                                     │
+  │  WAF Rules:                                         │
+  │    ├── AWS Managed Rules (OWASP Top 10)             │
+  │    ├── Rate limiting (DDoS protection)              │
+  │    ├── IP reputation lists                          │
+  │    ├── Geo blocking                                 │
+  │    └── Custom rules (SQL injection, XSS, etc.)      │
+  └─────────────────────────────────────────────────────┘
+
+WAF is NOT available for NLB (Layer 4 — no HTTP inspection)
+Use AWS Shield Advanced for NLB DDoS protection
+```
+
+### AWS Shield Integration
+
+| Shield Tier | Protection | Cost | ELB Support |
+|---|---|---|---|
+| **Shield Standard** | L3/L4 DDoS protection | Free (automatic) | All ELB types |
+| **Shield Advanced** | L3/L4/L7 DDoS + 24/7 DRT + cost protection | $3,000/month | All ELB types |
+
+### Internal vs Internet-Facing ELB
+
+```
+Internet-Facing ELB:
+  ├── Has a public DNS name resolving to public IPs
+  ├── ELB nodes have public IP addresses
+  ├── Targets can be in private subnets (ELB bridges public → private)
+  └── Subnet requirement: Public subnet with IGW route
+
+Internal ELB:
+  ├── Has a private DNS name resolving to private IPs only
+  ├── ELB nodes have only private IP addresses
+  ├── Used for internal microservices communication
+  └── Subnet requirement: Any subnet (public or private)
+
+Architecture Pattern:
+  Internet ──► Internet-Facing ALB (public subnet)
+                      │
+                      ▼
+               Internal ALB (private subnet)
+                      │
+                      ▼
+               Backend Services (private subnet)
+```
+
+---
+
+## 🔗 AWS PrivateLink & NLB
+
+PrivateLink allows you to expose a service to other VPCs or AWS accounts **without VPC peering, IGW, or NAT** — traffic stays on the AWS private network.
+
+```
+PrivateLink Architecture:
+─────────────────────────────────────────────────────────────────
+  Service Provider VPC (your service):
+    ┌─────────────────────────────────────────┐
+    │  NLB ──► EC2 / ECS / Lambda targets     │
+    │   │                                     │
+    │   └──► VPC Endpoint Service             │
+    │        (PrivateLink service)            │
+    └─────────────────────────────────────────┘
+                      │
+              AWS Private Network
+              (no internet, no peering)
+                      │
+  Service Consumer VPC (customer):
+    ┌─────────────────────────────────────────┐
+    │  Interface VPC Endpoint                 │
+    │  (ENI with private IP in consumer VPC)  │
+    │         │                               │
+    │         ▼                               │
+    │  Consumer App ──► Endpoint ──► Service  │
+    └─────────────────────────────────────────┘
+
+Key: NLB is REQUIRED as the backend for PrivateLink endpoint services
+     ALB cannot be used as a PrivateLink backend
+```
+
+### PrivateLink Use Cases
+
+```
+✓ SaaS providers exposing services to customers
+✓ Shared services VPC (logging, monitoring, auth) accessed by app VPCs
+✓ AWS Marketplace services
+✓ Cross-account service sharing without VPC peering
+✓ Compliance: traffic never leaves AWS network
+```
+
+---
+
+## 📊 Monitoring & Observability
+
+### CloudWatch Metrics — ALB
+
+| Metric | Description | Alert Threshold |
+|---|---|---|
+| `RequestCount` | Total requests processed | Baseline + 2x stddev |
+| `TargetResponseTime` | Latency from LB to target response | > 1s (app-dependent) |
+| `HTTPCode_Target_2XX_Count` | Successful responses from targets | — |
+| `HTTPCode_Target_4XX_Count` | Client errors from targets | Spike = bad input/auth issues |
+| `HTTPCode_Target_5XX_Count` | Server errors from targets | > 0 = investigate |
+| `HTTPCode_ELB_5XX_Count` | Errors generated by ALB itself | > 0 = LB issue |
+| `HealthyHostCount` | Number of healthy targets | < min threshold = alert |
+| `UnHealthyHostCount` | Number of unhealthy targets | > 0 = alert |
+| `ActiveConnectionCount` | Active TCP connections | Capacity planning |
+| `NewConnectionCount` | New TCP connections per second | Capacity planning |
+| `ProcessedBytes` | Total bytes processed | Cost/capacity monitoring |
+| `RuleEvaluations` | Number of rules evaluated | Performance tuning |
+
+### CloudWatch Metrics — NLB
+
+| Metric | Description |
+|---|---|
+| `ActiveFlowCount` | Active TCP/UDP flows |
+| `NewFlowCount` | New flows per second |
+| `ProcessedBytes` | Total bytes processed |
+| `HealthyHostCount` | Healthy targets |
+| `UnHealthyHostCount` | Unhealthy targets |
+| `TCP_Client_Reset_Count` | Resets sent from client to target |
+| `TCP_Target_Reset_Count` | Resets sent from target to client |
+| `TCP_ELB_Reset_Count` | Resets generated by NLB |
+
+### Access Logs
+
+ALB and NLB can log every request to **S3**. Access logs are disabled by default.
+
+```
+ALB Access Log Fields (key ones):
+  timestamp | elb | client:port | target:port | request_processing_time
+  target_processing_time | response_processing_time | elb_status_code
+  target_status_code | received_bytes | sent_bytes | request
+  user_agent | ssl_cipher | ssl_protocol | target_group_arn
+  trace_id | domain_name | chosen_cert_arn | matched_rule_priority
+  request_creation_time | actions_executed | redirect_url
+  error_reason | target:port_list | target_status_code_list
+
+Enable via:
+aws elbv2 modify-load-balancer-attributes \
+  --load-balancer-arn <arn> \
+  --attributes Key=access_logs.s3.enabled,Value=true \
+               Key=access_logs.s3.bucket,Value=my-logs-bucket \
+               Key=access_logs.s3.prefix,Value=my-alb
+```
+
+### Request Tracing
+
+ALB adds `X-Amzn-Trace-Id` header to every request for distributed tracing with **AWS X-Ray**:
+
+```
+X-Amzn-Trace-Id: Root=1-67891233-abcdef012345678912345678
+
+Integrate with X-Ray:
+  ALB ──► X-Ray Trace ──► Target (propagates trace ID)
+  View full request path in X-Ray Service Map
+```
+
+---
+
+## 💰 Pricing Model
+
+ELB pricing has two components: **hourly charge** + **LCU (Load Balancer Capacity Unit)** charge.
+
+### Load Balancer Capacity Units (LCU)
+
+LCUs measure the dimensions on which the load balancer processes your traffic. You are charged for the highest LCU dimension used per hour.
+
+### ALB Pricing Dimensions
+
+| Dimension | 1 LCU = |
+|---|---|
+| **New connections** | 25 new connections/second |
+| **Active connections** | 3,000 active connections/minute |
+| **Processed bytes** | 1 GB/hour (EC2/IP targets), 0.4 GB/hour (Lambda) |
+| **Rule evaluations** | 1,000 rule evaluations/second |
+
+### NLB Pricing Dimensions
+
+| Dimension | 1 LCU = |
+|---|---|
+| **New flows** | 800 new TCP flows/second, 400 new UDP flows/second |
+| **Active flows** | 100,000 active TCP flows, 200,000 active UDP flows |
+| **Processed bytes** | 1 GB/hour |
+
+### Approximate Costs (us-east-1)
+
+| ELB Type | Hourly Rate | LCU Rate |
+|---|---|---|
+| **ALB** | $0.008/hour | $0.008/LCU-hour |
+| **NLB** | $0.008/hour | $0.006/LCU-hour |
+| **GWLB** | $0.008/hour | $0.004/LCU-hour |
+| **CLB** | $0.025/hour | $0.008/GB processed |
+
+> ⚠️ Prices are approximate. Always check [AWS Pricing](https://aws.amazon.com/elasticloadbalancing/pricing/) for current rates.
+
+### Cost Optimization Tips
+
+```
+✓ Delete unused load balancers (hourly charge even with 0 traffic)
+✓ Use one ALB with multiple listeners/rules instead of multiple ALBs
+✓ Enable Cross-Zone on NLB only if needed (inter-AZ data transfer cost)
+✓ Use target group weights for gradual deployments (avoid duplicate LBs)
+✓ Monitor LCU metrics to right-size and predict costs
+✓ Use AWS Cost Explorer to track ELB spend by tag
+```
+
+---
+
+## 🏛️ Advanced Architectural Patterns
+
+### Pattern 1 — Multi-Tier Architecture
+
+```
+                    ┌─────────────────────────────────────────────┐
+                    │              Multi-Tier App                  │
+                    │                                             │
+  Internet ────────►│  Internet-Facing ALB                       │
+                    │  (Public Subnets, AZ-A + AZ-B)             │
+                    │         │                                   │
+                    │         ▼                                   │
+                    │  Web Tier ASG (Private Subnets)             │
+                    │  EC2: Nginx / React / Static                │
+                    │         │                                   │
+                    │         ▼                                   │
+                    │  Internal ALB                               │
+                    │  (Private Subnets, AZ-A + AZ-B)            │
+                    │         │                                   │
+                    │    ┌────┴────┐                              │
+                    │    ▼         ▼                              │
+                    │  API TG   Auth TG                           │
+                    │  (path=/api) (path=/auth)                   │
+                    │    │         │                              │
+                    │    ▼         ▼                              │
+                    │  App Tier ASG (Private Subnets)             │
+                    │         │                                   │
+                    │         ▼                                   │
+                    │  RDS / ElastiCache (Private Subnets)        │
+                    └─────────────────────────────────────────────┘
+```
+
+### Pattern 2 — Blue/Green Deployment
+
+```
+Blue/Green with ALB Weighted Target Groups:
+─────────────────────────────────────────────────────────────────
+  Phase 1 (Production on Blue):
+    ALB Rule → TG-Blue (100%) | TG-Green (0%)
+
+  Phase 2 (Deploy Green, test):
+    Deploy new version to TG-Green
+    Test via direct target group health checks
+
+  Phase 3 (Canary — 10% to Green):
+    ALB Rule → TG-Blue (90%) | TG-Green (10%)
+    Monitor error rates, latency
+
+  Phase 4 (Full cutover):
+    ALB Rule → TG-Blue (0%) | TG-Green (100%)
+
+  Phase 5 (Rollback if needed):
+    ALB Rule → TG-Blue (100%) | TG-Green (0%)
+    (Instant — just weight change, no DNS TTL wait)
+```
+
+### Pattern 3 — Microservices with ALB
+
+```
+Single ALB → Multiple Microservices:
+─────────────────────────────────────────────────────────────────
+  ALB: api.example.com
+    │
+    ├── /users/*     → TG-Users-Service    (ECS Fargate)
+    ├── /orders/*    → TG-Orders-Service   (ECS Fargate)
+    ├── /payments/*  → TG-Payments-Service (ECS Fargate)
+    ├── /auth/*      → TG-Auth-Service     (Lambda)
+    └── /static/*    → Redirect to S3 URL
+
+Benefits:
+  ✓ One ALB = one DNS name = one SSL cert
+  ✓ Each service scales independently
+  ✓ Path-based routing at Layer 7
+  ✓ No service mesh needed for basic routing
+```
+
+### Pattern 4 — NLB + ALB Chaining
+
+```
+Use case: Need static IP (NLB) + content routing (ALB)
+─────────────────────────────────────────────────────────────────
+  Client ──► NLB (Static Elastic IP, whitelisted by client firewall)
+                  │
+                  ▼
+             ALB (target type: alb)
+                  │
+          ┌───────┼───────┐
+          ▼       ▼       ▼
+        TG-A    TG-B    TG-C
+      (path-based routing)
+
+Why: Enterprise clients require fixed IPs for firewall whitelisting
+     but you also need ALB's content-based routing capabilities
+```
+
+### Pattern 5 — Centralized Security with GWLB
+
+```
+Hub-and-Spoke Security Architecture:
+─────────────────────────────────────────────────────────────────
+  ┌─────────────────────────────────────────────────────────┐
+  │  Security VPC (Hub)                                     │
+  │  ┌─────────────────────────────────────────────────┐   │
+  │  │  GWLB ──► Palo Alto Firewall Fleet (ASG)        │   │
+  │  │           (inspect all traffic)                 │   │
+  │  └─────────────────────────────────────────────────┘   │
+  └─────────────────────────────────────────────────────────┘
+           │                    │                    │
+    GWLB Endpoint        GWLB Endpoint        GWLB Endpoint
+           │                    │                    │
+  ┌────────▼──────┐  ┌──────────▼────┐  ┌───────────▼───┐
+  │  App VPC A    │  │  App VPC B    │  │  App VPC C    │
+  │  (Spoke)      │  │  (Spoke)      │  │  (Spoke)      │
+  └───────────────┘  └───────────────┘  └───────────────┘
+
+All traffic from all VPCs passes through centralized firewall
+Route tables in each spoke VPC direct traffic to GWLB endpoint
+```
+
+---
+
+## 🔑 Key Hacks & Hidden Behaviors
+
+These are the non-obvious behaviors that trip up architects and exam takers alike.
+
+### 1. ELB Subnet Requirements
+
+```
+Internet-Facing ALB/NLB:
+  ✓ Must be in PUBLIC subnets (with IGW route)
+  ✓ Minimum /27 subnet (at least 8 free IPs per AZ)
+  ✓ AWS recommends /24 or larger
+
+Internal ALB/NLB:
+  ✓ Can be in any subnet (public or private)
+  ✓ Same /27 minimum requirement
+
+⚠️  Common mistake: Putting internet-facing ALB in private subnet
+    Result: ALB created but unreachable from internet
+```
+
+### 2. ELB Does NOT Scale Instantly
+
+```
+ELB pre-warms automatically but has limits:
+  ✓ Handles gradual traffic increases automatically
+  ✗ Sudden massive traffic spikes can overwhelm ELB nodes
+
+Solution for sudden spikes:
+  ├── Contact AWS Support to pre-warm ELB (for known events)
+  ├── Use CloudFront in front of ALB (absorbs spike at edge)
+  └── Use AWS Global Accelerator (anycast routing + pre-warmed)
+
+503 "Service Unavailable" from ELB = No healthy targets
+502 "Bad Gateway" from ELB = Target returned invalid response
+504 "Gateway Timeout" from ELB = Target didn't respond in time
+```
+
+### 3. Idle Timeout
+
+```
+ALB Idle Timeout (default: 60 seconds):
+  If no data is sent on a connection for 60 seconds → connection closed
+  
+  Adjust for:
+    ├── Long-running requests: Increase to 300–3600s
+    ├── WebSocket: Match your WebSocket keepalive interval
+    └── File uploads: Set higher than max upload time
+
+aws elbv2 modify-load-balancer-attributes \
+  --load-balancer-arn <arn> \
+  --attributes Key=idle_timeout.timeout_seconds,Value=300
+```
+
+### 4. HTTP to HTTPS Redirect (Free, No Target Needed)
+
+```
+ALB can redirect HTTP → HTTPS without a target group:
+  Listener: HTTP:80
+  Default Action: Redirect to HTTPS:443 (301 Permanent)
+
+This is FREE — no target group, no EC2, no Lambda needed
+The ALB itself handles the redirect response
+
+aws elbv2 create-listener \
+  --load-balancer-arn <arn> \
+  --protocol HTTP --port 80 \
+  --default-actions Type=redirect,RedirectConfig="{Protocol=HTTPS,Port=443,StatusCode=HTTP_301}"
+```
+
+### 5. ALB Can Return Fixed Responses
+
+```
+ALB can return static responses without any backend:
+  Use cases:
+    ├── Maintenance page (503 with custom HTML)
+    ├── Health check endpoint (200 OK)
+    └── API versioning (404 for deprecated endpoints)
+
+Rule Action: Fixed Response
+  Status Code: 200
+  Content-Type: application/json
+  Message Body: {"status": "maintenance", "retry_after": 3600}
+```
+
+### 6. Target Group Can Have Zero Targets
+
+```
+Empty target group behavior:
+  ALB: Returns 503 to client
+  NLB: Connection times out
+
+Use case: Feature flags — route to empty TG to "disable" a feature
+          Gradually drain traffic before decommissioning a service
+```
+
+### 7. NLB Preserves Source IP — Security Group Implication
+
+```
+⚠️  Critical NLB behavior:
+  NLB passes the REAL client IP to targets
+  EC2 security groups must allow the CLIENT IP range
+
+  If your EC2 SG only allows the NLB IP → connections will be DROPPED
+  (because the packet arrives with the client's IP, not NLB's IP)
+
+  Fix: Allow the client IP range in EC2 SG
+  For internet-facing NLB: Allow 0.0.0.0/0 on the target port
+  For internal NLB: Allow the VPC CIDR or specific client CIDRs
+```
+
+### 8. ALB Desync Mitigation Mode
+
+```
+HTTP Desync attacks exploit differences in how HTTP parsers handle
+ambiguous requests (HTTP Request Smuggling).
+
+ALB Desync Mitigation Modes:
+  ├── Monitor:   Log but allow potentially dangerous requests
+  ├── Defensive: Drop ambiguous requests (default, recommended)
+  └── Strictest: Drop all non-RFC-compliant requests
+
+aws elbv2 modify-load-balancer-attributes \
+  --attributes Key=routing.http.desync_mitigation_mode,Value=defensive
+```
+
+### 9. Deletion Protection
+
+```
+Enable deletion protection to prevent accidental ELB deletion:
+  ✓ Prevents deletion via console, CLI, API
+  ✓ Must explicitly disable before deleting
+
+aws elbv2 modify-load-balancer-attributes \
+  --attributes Key=deletion_protection.enabled,Value=true
+
+⚠️  CloudFormation stack deletion will FAIL if deletion protection is ON
+    Always disable before stack teardown
+```
+
+### 10. ELB Access Log Delivery Delay
+
+```
+Access logs are delivered to S3 with a delay:
+  ALB: Logs delivered every 5 minutes
+  NLB: Logs delivered every 5 minutes
+
+⚠️  Access logs are NOT real-time
+    For real-time monitoring: Use CloudWatch metrics
+    For real-time logging: Use Kinesis Data Firehose via EventBridge
+```
+
+---
+
+## 📋 Quick Reference — Exam Cheat Sheet
+
+### ELB Type Selection
+
+| Keyword in Question | Answer |
+|---|---|
+| "Content-based routing", "path routing", "host routing" | **ALB** |
+| "WebSocket", "gRPC", "HTTP/2" | **ALB** |
+| "Lambda target", "serverless backend" | **ALB** |
+| "Cognito", "OIDC", "authenticate users at LB" | **ALB** |
+| "WAF", "web application firewall" | **ALB** |
+| "Static IP", "Elastic IP on LB", "whitelist LB IP" | **NLB** |
+| "UDP", "DNS load balancing", "gaming", "IoT" | **NLB** |
+| "Extreme performance", "millions of requests", "microsecond" | **NLB** |
+| "PrivateLink", "VPC endpoint service" | **NLB** |
+| "Real client IP on backend natively" | **NLB** |
+| "Third-party firewall", "IDS/IPS", "virtual appliance" | **GWLB** |
+| "GENEVE protocol", "transparent inspection" | **GWLB** |
+| "Legacy", "EC2-Classic", "migrate from CLB" | **CLB → ALB/NLB** |
+
+### Cross-Zone Load Balancing
+
+| | ALB | NLB | GWLB |
+|---|---|---|---|
+| Default | ON | OFF | OFF |
+| Can disable | ❌ | ✅ | ✅ |
+| Inter-AZ cost | Free | Charged | Charged |
+
+### SSL/TLS
+
+| | ALB | NLB | CLB |
+|---|---|---|---|
+| SNI (multiple certs) | ✅ | ✅ | ❌ |
+| ACM integration | ✅ | ✅ | ✅ |
+| TLS pass-through | ❌ | ✅ | ❌ |
+| WAF attachment | ✅ | ❌ | ❌ |
+
+### Health Checks
+
+| | ALB | NLB | GWLB |
+|---|---|---|---|
+| HTTP/HTTPS | ✅ | ✅ | ✅ |
+| TCP | ✅ | ✅ | ✅ |
+| gRPC | ✅ | ❌ | ❌ |
+| Custom response codes | ✅ | ❌ | ❌ |
+
+### Key Numbers to Remember
+
+| Concept | Value |
+|---|---|
+| Deregistration Delay default | **300 seconds** |
+| Deregistration Delay range | **0 – 3600 seconds** |
+| ALB Idle Timeout default | **60 seconds** |
+| Slow Start Duration range | **0 – 900 seconds** |
+| Minimum subnet size | **/27 (8 free IPs)** |
+| Pre-signed URL max (SDK) | **7 days** *(S3, not ELB — don't confuse)* |
+| ALB access log delivery | **Every 5 minutes** |
+| Rule priority range | **1 – 50,000** |
+| Max rules per ALB | **100 rules per listener** |
+| Max target groups per ALB | **100** |
+| Max targets per target group | **1,000** |
+
+### Common Exam Traps
+
+```
+Trap 1: "ALB Cross-Zone can be disabled"
+  ❌ Wrong — ALB Cross-Zone is ALWAYS ON and cannot be disabled
+
+Trap 2: "NLB security groups block traffic"
+  ❌ Wrong — NLB has NO security groups. Use EC2 SGs and NACLs
+
+Trap 3: "Use ALB for PrivateLink"
+  ❌ Wrong — PrivateLink requires NLB as the backend
+
+Trap 4: "CLB supports path-based routing"
+  ❌ Wrong — CLB has NO content-based routing
+
+Trap 5: "NLB adds X-Forwarded-For header"
+  ❌ Wrong — NLB preserves client IP natively (no header needed)
+  ALB adds X-Forwarded-For because it terminates the connection
+
+Trap 6: "Sticky sessions guarantee even distribution"
+  ❌ Wrong — Stickiness can cause UNEVEN distribution
+
+Trap 7: "ELB health checks use the same port as traffic"
+  ⚠️  Default yes, but you can configure a different health check port
+  Common pattern: Traffic on 443, health check on 8080 /health
+
+Trap 8: "Deregistration Delay = Connection Draining"
+  ✅ Same concept, different names:
+     CLB = "Connection Draining"
+     ALB/NLB = "Deregistration Delay"
+```
+
+---
+
+## 🗺️ Complete ELB Mental Model
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    ELB COMPLETE MENTAL MODEL                             │
+│                                                                         │
+│  LAYER 7 (HTTP/HTTPS)          LAYER 4 (TCP/UDP)      LAYER 3+4        │
+│  ┌─────────────────┐           ┌─────────────────┐   ┌──────────────┐  │
+│  │       ALB       │           │       NLB       │   │    GWLB      │  │
+│  │                 │           │                 │   │              │  │
+│  │ • Path routing  │           │ • Static IP     │   │ • Appliances │  │
+│  │ • Host routing  │           │ • UDP support   │   │ • GENEVE     │  │
+│  │ • gRPC/WS       │           │ • Ultra perf    │   │ • Inline     │  │
+│  │ • Lambda target │           │ • PrivateLink   │   │   inspect    │  │
+│  │ • Cognito auth  │           │ • Real client IP│   │              │  │
+│  │ • WAF           │           │ • TLS passthru  │   │              │  │
+│  │ • Cross-Zone ON │           │ • Cross-Zone OFF│   │ Cross-Zone   │  │
+│  │   (always free) │           │   (charged)     │   │ OFF(charged) │  │
+│  └─────────────────┘           └─────────────────┘   └──────────────┘  │
+│           │                             │                    │          │
+│           └─────────────────────────────┴────────────────────┘          │
+│                                         │                               │
+│                              ┌──────────▼──────────┐                   │
+│                              │    Target Groups     │                   │
+│                              │  instance | ip |     │                   │
+│                              │  lambda  | alb       │                   │
+│                              └──────────┬──────────┘                   │
+│                                         │                               │
+│                    ┌────────────────────┼────────────────────┐          │
+│                    ▼                    ▼                    ▼          │
+│               EC2 / ECS            Lambda               On-Prem        │
+│               Fargate / EKS        Functions            (via DX/VPN)   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+<p align="center">
+  <img src="https://icon.icepanel.io/AWS/svg/Networking-Content-Delivery/Elastic-Load-Balancing.svg" width="60"/>
+  <br/>
+  <em>Amazon ELB — Distribute traffic intelligently. Build resilient, scalable, secure applications.</em>
+</p>
+
+---
+
+### 📚 Series Navigation
+
+| Part | Topics Covered |
+|---|---|
+| **Part 1** | Architecture, ELB Types (CLB/ALB/NLB/GWLB), DNS→LB→Resources Flow, Listeners & Rules |
+| **Part 2** | Cross-Zone LB, Health Checks, Sticky Sessions, SSL/TLS & SNI, Connection Draining, Target Groups |
+| **Part 3** | Security, Monitoring, PrivateLink, Pricing, Advanced Patterns, Key Hacks & Exam Cheat Sheet |
+8:T4eca,
+# <img src="https://icon.icepanel.io/AWS/svg/Networking-Content-Delivery/Elastic-Load-Balancing.svg" width="40" align="center"/> Amazon ELB — Complete Guide for AWS Solutions Architect Associate
+### Part 2 of 3 — Cross-Zone LB, Health Checks, Sticky Sessions, SSL/TLS & Connection Draining
+
+---
+
+## ⚖️ Cross-Zone Load Balancing
+
+This is one of the most important and most tested ELB concepts. Understanding it requires understanding how ELB nodes work.
+
+### The Problem Without Cross-Zone Load Balancing
+
+```
+Scenario: 2 AZs, AZ-A has 2 targets, AZ-B has 8 targets
+DNS returns both ELB node IPs equally (50/50 split)
+
+WITHOUT Cross-Zone Load Balancing:
+─────────────────────────────────────────────────────────
+  Client requests (100 total)
+       │
+       ├── 50 requests → ELB Node AZ-A
+       │                      │
+       │              ┌───────┴───────┐
+       │              ▼               ▼
+       │         Target A-1       Target A-2
+       │         (25 req)         (25 req)   ← OVERLOADED
+       │
+       └── 50 requests → ELB Node AZ-B
+                              │
+              ┌───────┬───────┼───────┬───────┐
+              ▼       ▼       ▼       ▼       ▼
+           B-1(6) B-2(6) B-3(6) B-4(6) ... B-8(6) ← UNDERLOADED
+
+Result: AZ-A targets handle 25 req each, AZ-B targets handle ~6 req each
+        UNEVEN distribution — AZ-A targets are 4x more loaded!
+```
+
+### With Cross-Zone Load Balancing Enabled
+
+```
+WITH Cross-Zone Load Balancing:
+─────────────────────────────────────────────────────────
+  Client requests (100 total)
+       │
+       ├── 50 requests → ELB Node AZ-A ──────────────────────────────┐
+       │                      │                                       │
+       │              Distributes across ALL 10 targets in ALL AZs    │
+       │                                                              │
+       └── 50 requests → ELB Node AZ-B ──────────────────────────────┘
+                              │
+              Each of the 10 targets receives exactly 10 requests
+              (regardless of which AZ they are in)
+
+Result: All 10 targets handle 10 req each — PERFECTLY EVEN ✅
+```
+
+### Cross-Zone Behavior Per ELB Type
+
+| ELB Type | Default | Can Change? | Inter-AZ Data Transfer Cost |
+|---|---|---|---|
+| **ALB** | ✅ Always ON | ❌ Cannot disable | Free (no charge) |
+| **NLB** | ❌ OFF | ✅ Enable per TG | 💰 Charged (inter-AZ data) |
+| **GWLB** | ❌ OFF | ✅ Enable per TG | 💰 Charged (inter-AZ data) |
+| **CLB** | ❌ OFF | ✅ Enable | Free if enabled |
+
+### Cross-Zone — Zonal Shift Interaction
+
+When Cross-Zone is **disabled** on NLB, each AZ node only routes to targets in its own AZ. This enables **Zonal Shift** — you can shift traffic away from an impaired AZ without affecting other AZs.
+
+```
+Cross-Zone OFF + Zonal Shift:
+  AZ-A impaired → Shift AZ-A traffic to AZ-B
+  AZ-B node handles all traffic → AZ-B targets only
+  AZ-A targets receive zero traffic
+
+Cross-Zone ON:
+  Zonal Shift still works but traffic from AZ-B node
+  may still reach AZ-A targets (cross-zone routing)
+```
+
+> 💡 **Exam Tip:** ALB always has Cross-Zone ON and it's free. NLB has it OFF by default and charges for inter-AZ data transfer when enabled. This is a common exam trap.
+
+---
+
+## 🏥 Health Checks — How ELB Knows a Target is Alive
+
+Health checks are the mechanism by which ELB determines whether a target is healthy and eligible to receive traffic. An unhealthy target is **automatically removed** from rotation.
+
+### Health Check Flow
+
+```
+ELB Node ──── Health Check Request ────► Target
+              (every interval seconds)
+                                          │
+                                    ┌─────▼──────┐
+                                    │  Response? │
+                                    └─────┬──────┘
+                                          │
+                    ┌─────────────────────┼─────────────────────┐
+                    │                     │                     │
+                    ▼                     ▼                     ▼
+             2xx/3xx HTTP           Timeout / 5xx         Connection
+             response               response              refused
+                    │                     │                     │
+                    ▼                     ▼                     ▼
+            HealthyThreshold      UnhealthyThreshold     UnhealthyThreshold
+            count reached         count reached          count reached
+                    │                     │                     │
+                    ▼                     ▼                     ▼
+              HEALTHY ✅            UNHEALTHY ❌           UNHEALTHY ❌
+         (receives traffic)     (removed from rotation) (removed from rotation)
+```
+
+### Health Check Configuration
+
+| Parameter | Description | Default | Recommended |
+|---|---|---|---|
+| **Protocol** | HTTP, HTTPS, TCP, UDP | Varies | Match your app protocol |
+| **Path** | HTTP path to check (e.g., `/health`) | `/` | Dedicated `/health` endpoint |
+| **Port** | Port to check | Traffic port | Same as traffic port |
+| **Healthy Threshold** | Consecutive successes to mark healthy | 3 | 2–3 |
+| **Unhealthy Threshold** | Consecutive failures to mark unhealthy | 3 | 2–3 |
+| **Timeout** | Seconds to wait for response | 5s | 5–10s |
+| **Interval** | Seconds between checks | 30s | 10–30s |
+| **Success Codes** | HTTP codes considered healthy | 200 | 200-299 |
+
+### Health Check Best Practices
+
+```
+❌ Bad health check endpoint:
+   GET /  → Returns 200 but also queries DB, calls external APIs
+   Problem: Slow, expensive, cascading failures
+
+✅ Good health check endpoint:
+   GET /health → Returns {"status": "ok"} with 200
+   Checks: App is running, can accept connections
+   Does NOT check: DB, external services (those have their own health)
+
+✅ Deep health check (optional):
+   GET /health/deep → Checks DB connectivity, cache, dependencies
+   Use for: Readiness probes, not liveness probes
+```
+
+### Target States
+
+| State | Description |
+|---|---|
+| **initial** | Target just registered, health check not yet run |
+| **healthy** | Passing health checks, receiving traffic |
+| **unhealthy** | Failing health checks, NOT receiving traffic |
+| **unused** | Target registered but target group not attached to LB |
+| **draining** | Deregistering — existing connections finishing, no new traffic |
+| **unavailable** | Health checks disabled |
+
+---
+
+## 🍪 Sticky Sessions (Session Affinity)
+
+By default, ELB distributes each request independently. Sticky sessions ensure a **user's requests always go to the same target** for the duration of their session.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/SessionStickiness.png" width="750"/>
+</p>
+
+### How Stickiness Works
+
+```
+WITHOUT Stickiness:
+  User Session:
+    Request 1 → Target A (creates session data)
+    Request 2 → Target B (no session data — user logged out!)
+    Request 3 → Target C (no session data — broken experience)
+
+WITH Stickiness:
+  User Session:
+    Request 1 → Target A (creates session data, LB sets cookie)
+    Request 2 → Target A (cookie present, LB routes to same target)
+    Request 3 → Target A (consistent experience ✅)
+```
+
+### Stickiness Types (ALB)
+
+| Type | Cookie Name | Duration | Who Sets Cookie |
+|---|---|---|---|
+| **Duration-based** | `AWSALB` | 1 second – 7 days | ALB generates and manages |
+| **Application-based** | Custom name | App-defined | App generates, ALB uses it |
+
+### Duration-Based Stickiness
+
+```
+ALB sets cookie: AWSALB=<encrypted-target-info>; Expires=<duration>
+
+Flow:
+  1. First request → ALB picks target (round robin)
+  2. ALB sets AWSALB cookie in response
+  3. Subsequent requests include AWSALB cookie
+  4. ALB reads cookie → routes to same target
+  5. Cookie expires → next request goes through normal routing
+```
+
+### Application-Based Stickiness
+
+```
+App sets cookie: MyAppSession=<session-id>
+
+Flow:
+  1. App sets its own session cookie
+  2. ALB reads the app cookie name (configured in TG settings)
+  3. ALB uses the cookie value to determine target affinity
+  4. ALB also sets AWSALBAPP cookie to track the mapping
+
+Use when: App already manages sessions and you want LB to respect them
+```
+
+### Stickiness Caveats
+
+```
+⚠️  Problems with stickiness:
+  - Uneven load distribution (one target gets all requests from heavy users)
+  - If target becomes unhealthy, sticky users are re-routed (session lost anyway)
+  - Doesn't work well with auto-scaling (new targets don't get sticky traffic)
+
+✅  Better alternative:
+  - Store session data externally: ElastiCache (Redis), DynamoDB
+  - Stateless application design — any target can handle any request
+  - Use stickiness only when external session storage is not feasible
+```
+
+> 💡 **Exam Tip:** Stickiness is enabled at the **Target Group** level, not the listener level. NLB does not support cookie-based stickiness (it uses 5-tuple hash for flow persistence instead).
+
+---
+
+## 🔐 SSL/TLS Termination & SNI
+
+### SSL Termination
+
+ELB can terminate SSL/TLS connections, offloading the cryptographic work from your backend servers.
+
+```
+SSL Termination at ALB/NLB:
+─────────────────────────────────────────────────────────
+  Client ──── HTTPS (TLS) ────► ELB (decrypts here)
+                                      │
+                                      ▼
+                              ELB ──── HTTP ────► Target
+                              (plain text internally)
+
+Benefits:
+  ✓ Backend servers don't need SSL certs
+  ✓ Reduced CPU load on backend
+  ✓ Centralized certificate management via ACM
+  ✓ ALB can inspect HTTP headers for routing
+
+End-to-End Encryption (NLB TLS Pass-Through):
+─────────────────────────────────────────────────────────
+  Client ──── TLS ────► NLB (passes raw TCP) ──── TLS ────► Target
+  (NLB never decrypts — target holds the cert)
+
+Use when:
+  ✓ Compliance requires E2E encryption
+  ✓ Mutual TLS (mTLS) required
+  ✓ Backend must see original TLS handshake
+```
+
+### SNI — Server Name Indication
+
+SNI allows **multiple SSL certificates** on a single ALB, one per domain/subdomain.
+
+```
+Without SNI (CLB limitation):
+  One CLB = One SSL cert = One domain
+  app.example.com → CLB-1 (cert for app.example.com)
+  api.example.com → CLB-2 (cert for api.example.com)  ← Expensive!
+
+With SNI (ALB/NLB):
+  One ALB = Multiple SSL certs = Multiple domains
+  app.example.com ─┐
+  api.example.com ─┤─► Single ALB ─► Different target groups
+  admin.example.com┘   (ALB reads SNI header, picks correct cert)
+
+How SNI works:
+  1. Client sends TLS ClientHello with SNI extension
+     (includes the hostname: "api.example.com")
+  2. ALB reads SNI, selects matching certificate
+  3. TLS handshake completes with correct cert
+  4. Request routed based on host header rule
+```
+
+### Certificate Management with ACM
+
+```
+AWS Certificate Manager (ACM) Integration:
+  ✓ Free public SSL/TLS certificates
+  ✓ Auto-renewal (no manual cert rotation)
+  ✓ Direct attachment to ALB/NLB listeners
+  ✓ Wildcard certs: *.example.com covers all subdomains
+
+CLI: Attach cert to ALB listener
+aws elbv2 add-listener-certificates \
+  --listener-arn arn:aws:elasticloadbalancing:... \
+  --certificates CertificateArn=arn:aws:acm:...
+```
+
+### Security Policies (TLS Versions & Ciphers)
+
+ALB and NLB let you choose a **Security Policy** that defines which TLS versions and cipher suites are supported:
+
+| Policy | TLS Versions | Use Case |
+|---|---|---|
+| `ELBSecurityPolicy-TLS13-1-2-2021-06` | TLS 1.2, 1.3 | ✅ Recommended — modern clients |
+| `ELBSecurityPolicy-TLS13-1-3-2021-06` | TLS 1.3 only | Maximum security, newest clients only |
+| `ELBSecurityPolicy-2016-08` | TLS 1.0, 1.1, 1.2 | Legacy clients (avoid) |
+| `ELBSecurityPolicy-FS` | TLS 1.2 + Forward Secrecy | Compliance requiring FS |
+
+> 💡 **Exam Tip:** Use `ELBSecurityPolicy-TLS13-1-2-2021-06` for most workloads. Avoid policies that include TLS 1.0/1.1 — they are deprecated and insecure.
+
+---
+
+## 🔌 Connection Draining (Deregistration Delay)
+
+When a target is deregistered or marked unhealthy, ELB needs to handle **in-flight requests** gracefully. Connection Draining (called **Deregistration Delay** in ALB/NLB) handles this.
+
+### How It Works
+
+```
+Normal State:
+  ELB ──── new requests ────► Target A (healthy, registered)
+
+Deregistration Triggered (scale-in, deployment, maintenance):
+  ┌─────────────────────────────────────────────────────────┐
+  │  DRAINING STATE                                         │
+  │                                                         │
+  │  ELB ──── NO new requests ────► Target A               │
+  │  ELB ──── existing connections still active ──► Target A│
+  │                                                         │
+  │  Timer starts: 0 ──────────────────────► 300 seconds   │
+  │                                                         │
+  │  When all connections close OR timer expires:           │
+  │  Target A is fully deregistered                         │
+  └─────────────────────────────────────────────────────────┘
+```
+
+### Configuration
+
+| Setting | Range | Default | Recommendation |
+|---|---|---|---|
+| **Deregistration Delay** | 0 – 3600 seconds | 300 seconds | Match your longest request duration |
+
+```
+Tuning guidance:
+  Short-lived requests (API, microservices): 30–60 seconds
+  Long-lived requests (file uploads, reports): 300–600 seconds
+  WebSocket connections: Match session timeout
+  Set to 0: Immediate deregistration (use only if stateless + fast)
+```
+
+> 💡 **Exam Tip:** Connection Draining = CLB term. Deregistration Delay = ALB/NLB term. Same concept, different names. Setting it to 0 means immediate deregistration — in-flight requests will be dropped.
+
+---
+
+## 📊 Target Groups — Deep Dive
+
+Target Groups are the bridge between the load balancer and your actual resources. They are configured independently and can be reused across multiple load balancers.
+
+### Target Group Configuration
+
+```
+Target Group Settings:
+  ├── Target Type: instance | ip | lambda | alb
+  ├── Protocol: HTTP | HTTPS | TCP | UDP | TLS | TCP_UDP
+  ├── Port: 1–65535
+  ├── VPC: Which VPC targets reside in
+  ├── Protocol Version: HTTP1 | HTTP2 | gRPC (ALB only)
+  ├── Health Check: (see Health Checks section)
+  ├── Stickiness: enabled/disabled + type + duration
+  ├── Deregistration Delay: 0–3600 seconds
+  ├── Slow Start Duration: 0–900 seconds
+  └── Load Balancing Algorithm: Round Robin | LOR | Random
+```
+
+### Load Balancing Algorithms (ALB)
+
+| Algorithm | How It Works | Best For |
+|---|---|---|
+| **Round Robin** | Requests distributed sequentially to each target | Homogeneous targets, equal capacity |
+| **Least Outstanding Requests (LOR)** | New request goes to target with fewest active requests | Heterogeneous targets, varying request duration |
+| **Random** | Random target selection | Simple distribution, testing |
+| **Weighted Random** (with Anomaly Mitigation) | Random + avoids targets showing anomalies | Production workloads with auto-scaling |
+
+### Slow Start Mode
+
+When a new target registers, it may not be fully warmed up (JVM, caches, etc.). Slow Start gradually increases traffic to new targets:
+
+```
+Slow Start Duration: 30 seconds (example)
+
+  t=0s:   New target registered → receives 0% of its fair share
+  t=10s:  Receives ~33% of its fair share
+  t=20s:  Receives ~66% of its fair share
+  t=30s:  Receives 100% of its fair share (fully ramped)
+
+Use case: Java apps (JVM warmup), apps with in-memory caches
+```
+
+### Multi-Target Group Routing (Weighted)
+
+```
+ALB Rule with weighted forwarding:
+  Forward to:
+    ├── TG-Blue   (weight: 100) → 100% traffic (current production)
+    └── TG-Green  (weight: 0)   → 0% traffic (new version, not live)
+
+  Canary release:
+    ├── TG-Blue   (weight: 90)  → 90% traffic
+    └── TG-Green  (weight: 10)  → 10% traffic (canary)
+
+  Full cutover:
+    ├── TG-Blue   (weight: 0)   → 0% traffic (old version)
+    └── TG-Green  (weight: 100) → 100% traffic (new version)
+```
+
+---
+
+## 🌍 Regional vs Global Architecture
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/RegionalandGlobalArchitecture-1.png" width="750"/>
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/RegionalandGlobalArchitecture-2.png" width="750"/>
+</p>
+
+### ELB is Regional
+
+ELB operates within a **single AWS region**. It distributes traffic across AZs within that region but does NOT span regions.
+
+```
+Regional Architecture (Single Region):
+  Route 53 ──► ALB (us-east-1) ──► Targets in us-east-1 AZs
+
+Global Architecture (Multi-Region):
+  Route 53 (Latency/Geolocation routing)
+       │
+       ├──► ALB (us-east-1) ──► Targets in us-east-1
+       ├──► ALB (eu-west-1) ──► Targets in eu-west-1
+       └──► ALB (ap-southeast-1) ──► Targets in ap-southeast-1
+
+OR use AWS Global Accelerator:
+  Global Accelerator (Anycast IPs) ──► ALB/NLB in multiple regions
+  (Better performance than Route 53 — uses AWS backbone network)
+```
+
+### ELB + Auto Scaling Group Integration
+
+```
+Auto Scaling Group + ALB:
+  ┌─────────────────────────────────────────────────────┐
+  │                                                     │
+  │  ALB ──► Target Group ──► Auto Scaling Group        │
+  │                                │                    │
+  │                    ┌───────────┼───────────┐        │
+  │                    ▼           ▼           ▼        │
+  │                  EC2-1       EC2-2       EC2-3       │
+  │                                                     │
+  │  Scale Out: New EC2 launched → auto-registered in TG│
+  │  Scale In:  EC2 terminating → connection draining   │
+  │             → deregistered from TG → terminated     │
+  └─────────────────────────────────────────────────────┘
+
+Key: ASG uses ELB health checks (not just EC2 status checks)
+     If ELB marks instance unhealthy → ASG terminates and replaces it
+```
+
+---
+
+*Continued in Part 3 → Access Logs, Monitoring, Security, PrivateLink, Pricing & Exam Tips*
+9:T679a,
+# <img src="https://icon.icepanel.io/AWS/svg/Networking-Content-Delivery/Elastic-Load-Balancing.svg" width="40" align="center"/> Amazon ELB — Complete Guide for AWS Solutions Architect Associate
+### Part 1 of 3 — Architecture, Types & Core Concepts
+
+> **Elastic Load Balancing (ELB)** is AWS's managed load balancing service that automatically distributes incoming application traffic across multiple targets — EC2 instances, containers, IP addresses, and Lambda functions — across one or more Availability Zones.
+
+---
+
+## 📐 Why Load Balancing Exists — The Problem It Solves
+
+Before ELB, scaling an application meant manually managing traffic distribution. A single server handling all requests is a **Single Point of Failure (SPOF)**. Load balancers solve three fundamental problems:
+
+```
+Without LB:                          With LB:
+                                      
+  User ──────► Server A              User ──────► Load Balancer ──► Server A
+               (overloaded,                                      ──► Server B
+                crashes)                                         ──► Server C
+```
+
+| Problem | Without ELB | With ELB |
+|---|---|---|
+| **Single Point of Failure** | One server down = app down | Traffic rerouted to healthy targets |
+| **Scaling** | Manual, slow | Automatic distribution across new instances |
+| **Health** | No automatic detection | Continuous health checks, unhealthy targets removed |
+| **SSL Termination** | Each server manages certs | Centralized at the LB |
+| **Sticky Sessions** | Complex to implement | Built-in cookie-based stickiness |
+
+---
+
+## 🏗️ ELB Architecture — How It Is Built
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/ELB-2.png" width="750"/>
+</p>
+
+
+### Core Infrastructure Components
+
+| Component | Description |
+|---|---|
+| **Load Balancer Node** | Physical/virtual node deployed per AZ. Receives traffic and distributes it. |
+| **Listener** | Process that checks for connection requests on a protocol/port (e.g., HTTPS:443). |
+| **Target Group** | Logical grouping of targets (EC2, Lambda, IPs) that receive traffic. |
+| **Target** | Individual resource receiving traffic (EC2 instance, container, IP, Lambda). |
+| **Health Check** | Periodic probe to determine if a target is healthy and eligible to receive traffic. |
+| **Rule** | Conditions + actions on a listener — routes traffic to the correct target group. |
+
+### ELB Node Placement
+
+When you create an ELB and enable it for multiple AZs, AWS deploys **one ELB node per AZ**. Each node gets its own IP address. The ELB DNS name resolves to all active node IPs.
+
+```
+                    ┌─────────────────────────────────────────┐
+                    │           AWS Region (us-east-1)         │
+                    │                                          │
+  Internet ──DNS──► │  ELB DNS: my-alb-123.us-east-1.elb.amazonaws.com
+                    │         │              │                 │
+                    │    ┌────▼────┐    ┌────▼────┐           │
+                    │    │  Node   │    │  Node   │           │
+                    │    │  AZ-1a  │    │  AZ-1b  │           │
+                    │    └────┬────┘    └────┬────┘           │
+                    │         │              │                 │
+                    │    ┌────▼────┐    ┌────▼────┐           │
+                    │    │ Targets │    │ Targets │           │
+                    │    │  AZ-1a  │    │  AZ-1b  │           │
+                    │    └─────────┘    └─────────┘           │
+                    └─────────────────────────────────────────┘
+```
+
+---
+
+## 🌐 DNS → Load Balancer → Resources Flow
+
+
+This is the complete request journey from a user's browser to your backend resources:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     COMPLETE REQUEST FLOW                                    │
+│                                                                              │
+│  1. USER TYPES URL                                                           │
+│     Browser: https://app.example.com                                         │
+│                          │                                                   │
+│                          ▼                                                   │
+│  2. DNS RESOLUTION (Route 53)                                                │
+│     Route 53 Hosted Zone: example.com                                        │
+│     ALIAS Record: app.example.com → my-alb-123.us-east-1.elb.amazonaws.com  │
+│     Returns: IP of nearest ELB Node (e.g., 54.12.34.56)                     │
+│                          │                                                   │
+│                          ▼                                                   │
+│  3. TCP CONNECTION TO ELB NODE                                               │
+│     Client connects to ELB Node IP on port 443                               │
+│     TLS Handshake happens HERE (SSL Termination at LB)                       │
+│                          │                                                   │
+│                          ▼                                                   │
+│  4. LISTENER EVALUATION                                                      │
+│     Listener: HTTPS:443                                                      │
+│     Rules evaluated top-to-bottom:                                           │
+│       Rule 1: IF path = /api/*  → Forward to TargetGroup-API                │
+│       Rule 2: IF path = /admin/* → Forward to TargetGroup-Admin             │
+│       Default: Forward to TargetGroup-Web                                    │
+│                          │                                                   │
+│                          ▼                                                   │
+│  5. TARGET GROUP SELECTION                                                   │
+│     Target Group: TargetGroup-Web                                            │
+│     Algorithm: Round Robin / Least Outstanding Requests                      │
+│     Health Check: Only healthy targets eligible                              │
+│                          │                                                   │
+│                          ▼                                                   │
+│  6. REQUEST FORWARDED TO TARGET                                              │
+│     EC2 Instance / Container / Lambda / IP                                   │
+│     New TCP connection opened from ELB Node → Target                        │
+│     (Client IP preserved via X-Forwarded-For header)                        │
+│                          │                                                   │
+│                          ▼                                                   │
+│  7. RESPONSE RETURNS                                                         │
+│     Target → ELB Node → Client                                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+> 💡 **Key Insight:** The client never talks directly to your backend. The ELB node terminates the client connection and opens a **new, separate connection** to the target. This is called a **two-connection model**.
+
+---
+
+## 🔀 The Four Types of ELB
+
+AWS offers four types of load balancers. Each operates at a different layer of the OSI model and serves different use cases.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/ALBvsNLB-1.png" width="750"/>
+</p>
+
+
+### Quick Comparison
+
+| Feature | CLB (Classic) | ALB (Application) | NLB (Network) | GWLB (Gateway) |
+|---|---|---|---|---|
+| **OSI Layer** | Layer 4 & 7 (limited) | Layer 7 | Layer 4 | Layer 3 + 4 |
+| **Protocol** | HTTP, HTTPS, TCP | HTTP, HTTPS, WebSocket, gRPC | TCP, UDP, TLS | IP (all protocols) |
+| **Target Types** | EC2 only | EC2, IP, Lambda, Containers | EC2, IP, ALB | EC2 (appliances) |
+| **Host/Path Routing** | ❌ | ✅ | ❌ | ❌ |
+| **Static IP** | ❌ | ❌ (use Global Accelerator) | ✅ (per AZ) | ❌ |
+| **Preserve Client IP** | ❌ (X-Forwarded-For) | ❌ (X-Forwarded-For) | ✅ (native) | ✅ |
+| **WebSockets** | ❌ | ✅ | ✅ | ❌ |
+| **gRPC** | ❌ | ✅ | ❌ | ❌ |
+| **Performance** | Moderate | High | Ultra-low latency | Transparent |
+| **Use Case** | Legacy apps | Modern web apps | Extreme performance | Security appliances |
+| **Status** | Legacy (avoid) | ✅ Recommended | ✅ Recommended | ✅ Specialized |
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/ALBvsNLB-2.png" width="750"/>
+</p>
+---
+
+## 1️⃣ Classic Load Balancer (CLB) — Legacy
+
+> **Verdict: Do NOT use for new applications. AWS recommends migrating to ALB or NLB.**
+
+The original ELB. It operates at both Layer 4 and Layer 7 but with very limited Layer 7 capabilities. It only supports **one SSL certificate** and **one application per CLB**.
+
+### Why It's Legacy
+
+```
+CLB Limitations:
+  ✗ One SSL cert per CLB (expensive for multi-domain apps)
+  ✗ No content-based routing (no path/host rules)
+  ✗ Only supports EC2-Classic and EC2-VPC (old instances)
+  ✗ No support for containers, Lambda, or IP targets
+  ✗ No WebSocket support
+  ✗ No SNI (Server Name Indication)
+```
+
+### When You Still See It
+
+- Legacy applications built before 2016
+- Exam questions testing your knowledge of its limitations
+- Migration scenarios (CLB → ALB/NLB)
+
+---
+
+## 2️⃣ Application Load Balancer (ALB) — Layer 7
+
+The **most feature-rich** ELB type. Operates at Layer 7 (HTTP/HTTPS) and understands the content of requests — headers, paths, query strings, methods, and source IPs.
+
+### ALB Architecture
+
+```
+                         ┌──────────────────────────────────────┐
+                         │        Application Load Balancer      │
+                         │                                       │
+  HTTPS:443 ──────────►  │  Listener: HTTPS:443                 │
+                         │  Certificate: ACM cert (SNI support)  │
+                         │                                       │
+                         │  Rules (evaluated top → bottom):      │
+                         │  ┌─────────────────────────────────┐  │
+                         │  │ IF host = api.example.com       │  │
+                         │  │ AND path = /v2/*                │  │
+                         │  │ → Forward → TG-API-v2           │  │
+                         │  ├─────────────────────────────────┤  │
+                         │  │ IF path = /images/*             │  │
+                         │  │ → Forward → TG-Images           │  │
+                         │  ├─────────────────────────────────┤  │
+                         │  │ IF method = POST                │  │
+                         │  │ → Forward → TG-Writers          │  │
+                         │  ├─────────────────────────────────┤  │
+                         │  │ DEFAULT → Forward → TG-Web      │  │
+                         │  └─────────────────────────────────┘  │
+                         └──────────────────────────────────────┘
+                                  │         │         │
+                             ┌────▼──┐ ┌────▼──┐ ┌───▼───┐
+                             │TG-API │ │TG-Img │ │TG-Web │
+                             │v2     │ │       │ │       │
+                             └───────┘ └───────┘ └───────┘
+```
+
+### ALB Listener Rules — Conditions
+
+| Condition Type | Example | Use Case |
+|---|---|---|
+| **Host Header** | `api.example.com` | Multi-domain / microservices routing |
+| **Path Pattern** | `/api/*`, `/images/*` | Microservices on same domain |
+| **HTTP Method** | `GET`, `POST` | Read vs write routing |
+| **Query String** | `?version=2` | A/B testing, versioning |
+| **HTTP Header** | `X-Custom-Header: value` | Custom routing logic |
+| **Source IP** | `10.0.0.0/8` | Internal vs external routing |
+
+### ALB Listener Rules — Actions
+
+| Action | Description |
+|---|---|
+| **Forward** | Send to one or more target groups (with weights for A/B testing) |
+| **Redirect** | HTTP → HTTPS redirect, URL rewrite |
+| **Fixed Response** | Return a static HTTP response (200, 404, etc.) |
+| **Authenticate** | Integrate with Cognito or OIDC provider |
+
+### ALB Target Types
+
+```
+Target Group Types:
+  ├── instance   → EC2 instance ID (traffic via private IP)
+  ├── ip         → Any IP (on-prem via Direct Connect, containers)
+  └── lambda     → Invoke Lambda function (HTTP → JSON event)
+```
+
+### ALB Key Features
+
+| Feature | Detail |
+|---|---|
+| **SNI (Server Name Indication)** | Multiple SSL certs on one ALB — one per listener rule |
+| **WebSocket** | Full duplex persistent connections supported |
+| **gRPC** | Native gRPC protocol support for microservices |
+| **HTTP/2** | Supported between client and ALB |
+| **Sticky Sessions** | Duration-based or application-based cookies |
+| **WAF Integration** | AWS WAF can be attached directly to ALB |
+| **Cognito Auth** | Authenticate users before forwarding to targets |
+| **Access Logs** | Detailed request logs to S3 |
+| **Request Tracing** | Adds `X-Amzn-Trace-Id` header to every request |
+
+### ALB — Client IP Preservation
+
+ALB terminates the client connection. The backend sees the **ELB node's IP**, not the client's IP. To get the real client IP:
+
+```
+X-Forwarded-For: <client-ip>, <proxy-ip>
+X-Forwarded-Port: 443
+X-Forwarded-Proto: https
+```
+
+> 💡 **Exam Tip:** ALB is the answer for: content-based routing, microservices, containers (ECS/EKS), Lambda targets, WebSocket, gRPC, Cognito authentication, and WAF integration.
+
+---
+
+## 3️⃣ Network Load Balancer (NLB) — Layer 4
+
+Operates at **Layer 4 (TCP/UDP/TLS)**. Does NOT inspect HTTP content. Designed for **extreme performance** — millions of requests per second with single-digit millisecond latency.
+
+### NLB Architecture
+
+```
+                    ┌──────────────────────────────────────┐
+                    │        Network Load Balancer          │
+                    │                                       │
+  TCP:443 ────────► │  Listener: TCP:443                   │
+                    │                                       │
+                    │  No rules — pure protocol routing     │
+                    │  Passes through raw TCP/UDP packets   │
+                    │                                       │
+                    │  Static IP per AZ (Elastic IP)        │
+                    └──────────────────────────────────────┘
+                              │           │
+                    ┌─────────▼──┐  ┌─────▼──────┐
+                    │  Target    │  │  Target    │
+                    │  Group     │  │  Group     │
+                    │  TCP:443   │  │  UDP:53    │
+                    └────────────┘  └────────────┘
+```
+
+### NLB Key Features
+
+| Feature | Detail |
+|---|---|
+| **Static IP** | One static IP per AZ (can assign Elastic IP) — whitelistable |
+| **Client IP Preservation** | Backend sees the **real client IP** natively (no X-Forwarded-For needed) |
+| **Ultra-Low Latency** | Single-digit millisecond latency |
+| **TLS Offloading** | Can terminate TLS (like ALB) or pass-through raw TLS |
+| **UDP Support** | DNS, gaming, IoT, streaming — ALB cannot do this |
+| **PrivateLink** | NLB is the endpoint for AWS PrivateLink services |
+| **Zonal DNS** | Each AZ node has its own DNS name for zonal isolation |
+| **ALB as Target** | NLB can forward to an ALB (NLB for static IP + ALB for routing) |
+
+### NLB Target Types
+
+```
+Target Group Types:
+  ├── instance   → EC2 instance ID
+  ├── ip         → Any IP (on-prem, containers)
+  └── alb        → Application Load Balancer (NLB → ALB chaining)
+```
+
+### NLB — TLS Pass-Through vs TLS Termination
+
+```
+TLS Termination at NLB:
+  Client ──TLS──► NLB (decrypts) ──TCP──► Target
+  (NLB holds the cert, backend gets plain traffic)
+
+TLS Pass-Through:
+  Client ──TLS──► NLB (passes raw TCP) ──TLS──► Target
+  (End-to-end encryption, target holds the cert)
+  Use when: compliance requires E2E encryption, mutual TLS (mTLS)
+```
+
+> 💡 **Exam Tip:** NLB is the answer for: static IP requirements, UDP traffic, extreme performance (gaming, IoT, financial trading), PrivateLink, and when the backend needs to see the real client IP natively.
+
+---
+
+## 4️⃣ Gateway Load Balancer (GWLB) — Layer 3/4
+
+The newest ELB type. Designed specifically to deploy, scale, and manage **third-party virtual network appliances** — firewalls, intrusion detection systems (IDS/IPS), deep packet inspection tools.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/GWLB-1.png" width="750"/>
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/GWLB-2.png" width="750"/>
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/GWLB-3.png" width="750"/>
+</p>
+
+### GWLB Architecture
+
+```
+                    ┌──────────────────────────────────────────────┐
+                    │              Traffic Flow with GWLB           │
+                    │                                              │
+  Internet ────────►│  Internet Gateway                           │
+                    │         │                                    │
+                    │         ▼  (Route Table: 0.0.0.0/0 → GWLB)  │
+                    │  Gateway Load Balancer                       │
+                    │  (GENEVE protocol, port 6081)                │
+                    │         │                                    │
+                    │         ▼                                    │
+                    │  Security Appliance Fleet                    │
+                    │  (Palo Alto, Fortinet, CheckPoint, etc.)     │
+                    │         │                                    │
+                    │         ▼  (Traffic returned after inspect)  │
+                    │  Gateway Load Balancer (returns traffic)     │
+                    │         │                                    │
+                    │         ▼                                    │
+                    │  Application Servers (EC2, etc.)             │
+                    └──────────────────────────────────────────────┘
+```
+
+### GWLB Key Features
+
+| Feature | Detail |
+|---|---|
+| **GENEVE Protocol** | Encapsulates packets on port 6081 — preserves original packet |
+| **Transparent Inspection** | Appliances see original source/dest IPs |
+| **Bump-in-the-Wire** | Traffic flows through appliances without changing routing |
+| **GWLB Endpoint** | VPC endpoint that intercepts traffic via route tables |
+| **Horizontal Scaling** | Scale appliance fleet automatically |
+| **Flow Stickiness** | Same flow always goes to same appliance (5-tuple hash) |
+
+### When to Use GWLB
+
+```
+Use GWLB when you need:
+  ✓ Third-party firewall (Palo Alto, Fortinet, CheckPoint)
+  ✓ Intrusion Detection/Prevention (IDS/IPS)
+  ✓ Deep Packet Inspection (DPI)
+  ✓ Centralized security inspection across multiple VPCs
+  ✓ Compliance requiring all traffic to pass through security appliances
+```
+
+> 💡 **Exam Tip:** If the question mentions "third-party virtual appliances", "inline inspection", "transparent security", or "GENEVE" — the answer is GWLB.
+
+---
+
+## 🎯 When to Use Which Type — Decision Tree
+
+```
+                    ┌─────────────────────────────┐
+                    │   What does your app need?   │
+                    └──────────────┬──────────────┘
+                                   │
+              ┌────────────────────┼────────────────────┐
+              │                    │                    │
+              ▼                    ▼                    ▼
+   Third-party firewall/    HTTP/HTTPS traffic?   TCP/UDP/extreme
+   security appliance?      Layer 7 routing?      performance?
+              │                    │                    │
+              ▼                    ▼                    ▼
+           GWLB                  ALB                  NLB
+                                  │                    │
+                         ┌────────┴──────┐    ┌───────┴──────┐
+                         │               │    │              │
+                    Microservices    WebSocket  Static IP   UDP traffic
+                    Path routing     gRPC       PrivateLink  Gaming/IoT
+                    Cognito auth     Lambda     Real client  Financial
+                    WAF              targets    IP needed    trading
+```
+
+| Scenario | Best Choice | Why |
+|---|---|---|
+| Web application with `/api` and `/web` paths | **ALB** | Content-based routing |
+| Real-time gaming server (UDP) | **NLB** | UDP support, ultra-low latency |
+| Need to whitelist a fixed IP for firewall rules | **NLB** | Static Elastic IP per AZ |
+| Microservices on ECS/EKS | **ALB** | Container-aware, path/host routing |
+| Lambda function as backend | **ALB** | Only LB that supports Lambda targets |
+| Palo Alto firewall inspection | **GWLB** | Virtual appliance fleet management |
+| PrivateLink service endpoint | **NLB** | NLB is required for PrivateLink |
+| User authentication before app access | **ALB** | Cognito/OIDC integration |
+| Financial trading (microsecond matters) | **NLB** | Single-digit ms latency |
+| Legacy EC2-Classic app | **CLB** | Only option (but migrate ASAP) |
+| NLB + content routing combined | **NLB → ALB** | Chain NLB (static IP) → ALB (routing) |
+
+---
+
+## 🔊 Listeners & Rules — Deep Dive
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/ELBListners.png" width="750"/>
+</p>
+
+### Listener Configuration
+
+A **Listener** is the entry point of your load balancer. It defines:
+- **Protocol** — HTTP, HTTPS, TCP, UDP, TLS, TCP_UDP
+- **Port** — 1–65535
+- **Default Action** — what to do if no rule matches
+
+```
+ALB Listener Example:
+  Protocol: HTTPS
+  Port: 443
+  SSL Certificate: arn:aws:acm:us-east-1:123:certificate/abc
+  Default Action: Forward to TG-Default
+
+  Rules:
+    Priority 1: IF path-pattern = /api/* → Forward to TG-API (weight: 80%)
+                                         → Forward to TG-API-v2 (weight: 20%)
+    Priority 2: IF host-header = admin.example.com → Authenticate (Cognito)
+                                                    → Forward to TG-Admin
+    Priority 3: IF http-header X-Beta = true → Forward to TG-Beta
+    Default:    Forward to TG-Default
+```
+
+### Rule Priority
+
+- Rules are evaluated **top to bottom** by priority number (1 = highest)
+- **Default rule** always has the lowest priority (evaluated last)
+- First matching rule wins — subsequent rules are NOT evaluated
+
+### Weighted Target Groups (ALB)
+
+Forward action can split traffic across multiple target groups with weights:
+
+```
+Rule: Forward to:
+  ├── TG-Production  (weight: 90)  → 90% of traffic
+  └── TG-Canary      (weight: 10)  → 10% of traffic
+
+Use case: Canary deployments, A/B testing, blue/green deployments
+```
+
+> 📸 **Visual diagrams throughout this guide are sourced from [Adrian Cantrill's AWS SAA-C03 course](https://learn.cantrill.io) — highly recommended for anyone serious about AWS certifications.**
+
+---
+
+*Continued in Part 2 → Cross-Zone Load Balancing, Health Checks, Sticky Sessions, SSL/TLS, and Connection Draining*
+a:T72f0,
+# <img src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" width="40" align="center"/> AWS CloudFormation — Complete Guide for AWS Solutions Architect Associate
 
 > **AWS CloudFormation** is AWS's Infrastructure as Code (IaC) service that lets you model, provision, and manage AWS and third-party resources by treating infrastructure as code — declaratively, repeatably, and safely.
 
@@ -1303,1668 +2963,12 @@ Always URL-encode parameter values when constructing launch links programmatical
   <img src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" width="60"/><br/>
   <em>AWS CloudFormation — Model, provision, and manage your entire infrastructure as code.</em>
 </p>
-8:T6799,# <img src="https://icon.icepanel.io/AWS/svg/Networking-Content-Delivery/Elastic-Load-Balancing.svg" width="40" align="center"/> Amazon ELB — Complete Guide for AWS Solutions Architect Associate
-### Part 1 of 3 — Architecture, Types & Core Concepts
-
-> **Elastic Load Balancing (ELB)** is AWS's managed load balancing service that automatically distributes incoming application traffic across multiple targets — EC2 instances, containers, IP addresses, and Lambda functions — across one or more Availability Zones.
-
----
-
-## 📐 Why Load Balancing Exists — The Problem It Solves
-
-Before ELB, scaling an application meant manually managing traffic distribution. A single server handling all requests is a **Single Point of Failure (SPOF)**. Load balancers solve three fundamental problems:
-
-```
-Without LB:                          With LB:
-                                      
-  User ──────► Server A              User ──────► Load Balancer ──► Server A
-               (overloaded,                                      ──► Server B
-                crashes)                                         ──► Server C
-```
-
-| Problem | Without ELB | With ELB |
-|---|---|---|
-| **Single Point of Failure** | One server down = app down | Traffic rerouted to healthy targets |
-| **Scaling** | Manual, slow | Automatic distribution across new instances |
-| **Health** | No automatic detection | Continuous health checks, unhealthy targets removed |
-| **SSL Termination** | Each server manages certs | Centralized at the LB |
-| **Sticky Sessions** | Complex to implement | Built-in cookie-based stickiness |
-
----
-
-## 🏗️ ELB Architecture — How It Is Built
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/ELB-2.png" width="750"/>
-</p>
-
-
-### Core Infrastructure Components
-
-| Component | Description |
-|---|---|
-| **Load Balancer Node** | Physical/virtual node deployed per AZ. Receives traffic and distributes it. |
-| **Listener** | Process that checks for connection requests on a protocol/port (e.g., HTTPS:443). |
-| **Target Group** | Logical grouping of targets (EC2, Lambda, IPs) that receive traffic. |
-| **Target** | Individual resource receiving traffic (EC2 instance, container, IP, Lambda). |
-| **Health Check** | Periodic probe to determine if a target is healthy and eligible to receive traffic. |
-| **Rule** | Conditions + actions on a listener — routes traffic to the correct target group. |
-
-### ELB Node Placement
-
-When you create an ELB and enable it for multiple AZs, AWS deploys **one ELB node per AZ**. Each node gets its own IP address. The ELB DNS name resolves to all active node IPs.
-
-```
-                    ┌─────────────────────────────────────────┐
-                    │           AWS Region (us-east-1)         │
-                    │                                          │
-  Internet ──DNS──► │  ELB DNS: my-alb-123.us-east-1.elb.amazonaws.com
-                    │         │              │                 │
-                    │    ┌────▼────┐    ┌────▼────┐           │
-                    │    │  Node   │    │  Node   │           │
-                    │    │  AZ-1a  │    │  AZ-1b  │           │
-                    │    └────┬────┘    └────┬────┘           │
-                    │         │              │                 │
-                    │    ┌────▼────┐    ┌────▼────┐           │
-                    │    │ Targets │    │ Targets │           │
-                    │    │  AZ-1a  │    │  AZ-1b  │           │
-                    │    └─────────┘    └─────────┘           │
-                    └─────────────────────────────────────────┘
-```
-
----
-
-## 🌐 DNS → Load Balancer → Resources Flow
-
-
-This is the complete request journey from a user's browser to your backend resources:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                     COMPLETE REQUEST FLOW                                    │
-│                                                                              │
-│  1. USER TYPES URL                                                           │
-│     Browser: https://app.example.com                                         │
-│                          │                                                   │
-│                          ▼                                                   │
-│  2. DNS RESOLUTION (Route 53)                                                │
-│     Route 53 Hosted Zone: example.com                                        │
-│     ALIAS Record: app.example.com → my-alb-123.us-east-1.elb.amazonaws.com  │
-│     Returns: IP of nearest ELB Node (e.g., 54.12.34.56)                     │
-│                          │                                                   │
-│                          ▼                                                   │
-│  3. TCP CONNECTION TO ELB NODE                                               │
-│     Client connects to ELB Node IP on port 443                               │
-│     TLS Handshake happens HERE (SSL Termination at LB)                       │
-│                          │                                                   │
-│                          ▼                                                   │
-│  4. LISTENER EVALUATION                                                      │
-│     Listener: HTTPS:443                                                      │
-│     Rules evaluated top-to-bottom:                                           │
-│       Rule 1: IF path = /api/*  → Forward to TargetGroup-API                │
-│       Rule 2: IF path = /admin/* → Forward to TargetGroup-Admin             │
-│       Default: Forward to TargetGroup-Web                                    │
-│                          │                                                   │
-│                          ▼                                                   │
-│  5. TARGET GROUP SELECTION                                                   │
-│     Target Group: TargetGroup-Web                                            │
-│     Algorithm: Round Robin / Least Outstanding Requests                      │
-│     Health Check: Only healthy targets eligible                              │
-│                          │                                                   │
-│                          ▼                                                   │
-│  6. REQUEST FORWARDED TO TARGET                                              │
-│     EC2 Instance / Container / Lambda / IP                                   │
-│     New TCP connection opened from ELB Node → Target                        │
-│     (Client IP preserved via X-Forwarded-For header)                        │
-│                          │                                                   │
-│                          ▼                                                   │
-│  7. RESPONSE RETURNS                                                         │
-│     Target → ELB Node → Client                                               │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-> 💡 **Key Insight:** The client never talks directly to your backend. The ELB node terminates the client connection and opens a **new, separate connection** to the target. This is called a **two-connection model**.
-
----
-
-## 🔀 The Four Types of ELB
-
-AWS offers four types of load balancers. Each operates at a different layer of the OSI model and serves different use cases.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/ALBvsNLB-1.png" width="750"/>
-</p>
-
-
-### Quick Comparison
-
-| Feature | CLB (Classic) | ALB (Application) | NLB (Network) | GWLB (Gateway) |
-|---|---|---|---|---|
-| **OSI Layer** | Layer 4 & 7 (limited) | Layer 7 | Layer 4 | Layer 3 + 4 |
-| **Protocol** | HTTP, HTTPS, TCP | HTTP, HTTPS, WebSocket, gRPC | TCP, UDP, TLS | IP (all protocols) |
-| **Target Types** | EC2 only | EC2, IP, Lambda, Containers | EC2, IP, ALB | EC2 (appliances) |
-| **Host/Path Routing** | ❌ | ✅ | ❌ | ❌ |
-| **Static IP** | ❌ | ❌ (use Global Accelerator) | ✅ (per AZ) | ❌ |
-| **Preserve Client IP** | ❌ (X-Forwarded-For) | ❌ (X-Forwarded-For) | ✅ (native) | ✅ |
-| **WebSockets** | ❌ | ✅ | ✅ | ❌ |
-| **gRPC** | ❌ | ✅ | ❌ | ❌ |
-| **Performance** | Moderate | High | Ultra-low latency | Transparent |
-| **Use Case** | Legacy apps | Modern web apps | Extreme performance | Security appliances |
-| **Status** | Legacy (avoid) | ✅ Recommended | ✅ Recommended | ✅ Specialized |
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/ALBvsNLB-2.png" width="750"/>
-</p>
----
-
-## 1️⃣ Classic Load Balancer (CLB) — Legacy
-
-> **Verdict: Do NOT use for new applications. AWS recommends migrating to ALB or NLB.**
-
-The original ELB. It operates at both Layer 4 and Layer 7 but with very limited Layer 7 capabilities. It only supports **one SSL certificate** and **one application per CLB**.
-
-### Why It's Legacy
-
-```
-CLB Limitations:
-  ✗ One SSL cert per CLB (expensive for multi-domain apps)
-  ✗ No content-based routing (no path/host rules)
-  ✗ Only supports EC2-Classic and EC2-VPC (old instances)
-  ✗ No support for containers, Lambda, or IP targets
-  ✗ No WebSocket support
-  ✗ No SNI (Server Name Indication)
-```
-
-### When You Still See It
-
-- Legacy applications built before 2016
-- Exam questions testing your knowledge of its limitations
-- Migration scenarios (CLB → ALB/NLB)
-
----
-
-## 2️⃣ Application Load Balancer (ALB) — Layer 7
-
-The **most feature-rich** ELB type. Operates at Layer 7 (HTTP/HTTPS) and understands the content of requests — headers, paths, query strings, methods, and source IPs.
-
-### ALB Architecture
-
-```
-                         ┌──────────────────────────────────────┐
-                         │        Application Load Balancer      │
-                         │                                       │
-  HTTPS:443 ──────────►  │  Listener: HTTPS:443                 │
-                         │  Certificate: ACM cert (SNI support)  │
-                         │                                       │
-                         │  Rules (evaluated top → bottom):      │
-                         │  ┌─────────────────────────────────┐  │
-                         │  │ IF host = api.example.com       │  │
-                         │  │ AND path = /v2/*                │  │
-                         │  │ → Forward → TG-API-v2           │  │
-                         │  ├─────────────────────────────────┤  │
-                         │  │ IF path = /images/*             │  │
-                         │  │ → Forward → TG-Images           │  │
-                         │  ├─────────────────────────────────┤  │
-                         │  │ IF method = POST                │  │
-                         │  │ → Forward → TG-Writers          │  │
-                         │  ├─────────────────────────────────┤  │
-                         │  │ DEFAULT → Forward → TG-Web      │  │
-                         │  └─────────────────────────────────┘  │
-                         └──────────────────────────────────────┘
-                                  │         │         │
-                             ┌────▼──┐ ┌────▼──┐ ┌───▼───┐
-                             │TG-API │ │TG-Img │ │TG-Web │
-                             │v2     │ │       │ │       │
-                             └───────┘ └───────┘ └───────┘
-```
-
-### ALB Listener Rules — Conditions
-
-| Condition Type | Example | Use Case |
-|---|---|---|
-| **Host Header** | `api.example.com` | Multi-domain / microservices routing |
-| **Path Pattern** | `/api/*`, `/images/*` | Microservices on same domain |
-| **HTTP Method** | `GET`, `POST` | Read vs write routing |
-| **Query String** | `?version=2` | A/B testing, versioning |
-| **HTTP Header** | `X-Custom-Header: value` | Custom routing logic |
-| **Source IP** | `10.0.0.0/8` | Internal vs external routing |
-
-### ALB Listener Rules — Actions
-
-| Action | Description |
-|---|---|
-| **Forward** | Send to one or more target groups (with weights for A/B testing) |
-| **Redirect** | HTTP → HTTPS redirect, URL rewrite |
-| **Fixed Response** | Return a static HTTP response (200, 404, etc.) |
-| **Authenticate** | Integrate with Cognito or OIDC provider |
-
-### ALB Target Types
-
-```
-Target Group Types:
-  ├── instance   → EC2 instance ID (traffic via private IP)
-  ├── ip         → Any IP (on-prem via Direct Connect, containers)
-  └── lambda     → Invoke Lambda function (HTTP → JSON event)
-```
-
-### ALB Key Features
-
-| Feature | Detail |
-|---|---|
-| **SNI (Server Name Indication)** | Multiple SSL certs on one ALB — one per listener rule |
-| **WebSocket** | Full duplex persistent connections supported |
-| **gRPC** | Native gRPC protocol support for microservices |
-| **HTTP/2** | Supported between client and ALB |
-| **Sticky Sessions** | Duration-based or application-based cookies |
-| **WAF Integration** | AWS WAF can be attached directly to ALB |
-| **Cognito Auth** | Authenticate users before forwarding to targets |
-| **Access Logs** | Detailed request logs to S3 |
-| **Request Tracing** | Adds `X-Amzn-Trace-Id` header to every request |
-
-### ALB — Client IP Preservation
-
-ALB terminates the client connection. The backend sees the **ELB node's IP**, not the client's IP. To get the real client IP:
-
-```
-X-Forwarded-For: <client-ip>, <proxy-ip>
-X-Forwarded-Port: 443
-X-Forwarded-Proto: https
-```
-
-> 💡 **Exam Tip:** ALB is the answer for: content-based routing, microservices, containers (ECS/EKS), Lambda targets, WebSocket, gRPC, Cognito authentication, and WAF integration.
-
----
-
-## 3️⃣ Network Load Balancer (NLB) — Layer 4
-
-Operates at **Layer 4 (TCP/UDP/TLS)**. Does NOT inspect HTTP content. Designed for **extreme performance** — millions of requests per second with single-digit millisecond latency.
-
-### NLB Architecture
-
-```
-                    ┌──────────────────────────────────────┐
-                    │        Network Load Balancer          │
-                    │                                       │
-  TCP:443 ────────► │  Listener: TCP:443                   │
-                    │                                       │
-                    │  No rules — pure protocol routing     │
-                    │  Passes through raw TCP/UDP packets   │
-                    │                                       │
-                    │  Static IP per AZ (Elastic IP)        │
-                    └──────────────────────────────────────┘
-                              │           │
-                    ┌─────────▼──┐  ┌─────▼──────┐
-                    │  Target    │  │  Target    │
-                    │  Group     │  │  Group     │
-                    │  TCP:443   │  │  UDP:53    │
-                    └────────────┘  └────────────┘
-```
-
-### NLB Key Features
-
-| Feature | Detail |
-|---|---|
-| **Static IP** | One static IP per AZ (can assign Elastic IP) — whitelistable |
-| **Client IP Preservation** | Backend sees the **real client IP** natively (no X-Forwarded-For needed) |
-| **Ultra-Low Latency** | Single-digit millisecond latency |
-| **TLS Offloading** | Can terminate TLS (like ALB) or pass-through raw TLS |
-| **UDP Support** | DNS, gaming, IoT, streaming — ALB cannot do this |
-| **PrivateLink** | NLB is the endpoint for AWS PrivateLink services |
-| **Zonal DNS** | Each AZ node has its own DNS name for zonal isolation |
-| **ALB as Target** | NLB can forward to an ALB (NLB for static IP + ALB for routing) |
-
-### NLB Target Types
-
-```
-Target Group Types:
-  ├── instance   → EC2 instance ID
-  ├── ip         → Any IP (on-prem, containers)
-  └── alb        → Application Load Balancer (NLB → ALB chaining)
-```
-
-### NLB — TLS Pass-Through vs TLS Termination
-
-```
-TLS Termination at NLB:
-  Client ──TLS──► NLB (decrypts) ──TCP──► Target
-  (NLB holds the cert, backend gets plain traffic)
-
-TLS Pass-Through:
-  Client ──TLS──► NLB (passes raw TCP) ──TLS──► Target
-  (End-to-end encryption, target holds the cert)
-  Use when: compliance requires E2E encryption, mutual TLS (mTLS)
-```
-
-> 💡 **Exam Tip:** NLB is the answer for: static IP requirements, UDP traffic, extreme performance (gaming, IoT, financial trading), PrivateLink, and when the backend needs to see the real client IP natively.
-
----
-
-## 4️⃣ Gateway Load Balancer (GWLB) — Layer 3/4
-
-The newest ELB type. Designed specifically to deploy, scale, and manage **third-party virtual network appliances** — firewalls, intrusion detection systems (IDS/IPS), deep packet inspection tools.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/GWLB-1.png" width="750"/>
-</p>
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/GWLB-2.png" width="750"/>
-</p>
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/GWLB-3.png" width="750"/>
-</p>
-
-### GWLB Architecture
-
-```
-                    ┌──────────────────────────────────────────────┐
-                    │              Traffic Flow with GWLB           │
-                    │                                              │
-  Internet ────────►│  Internet Gateway                           │
-                    │         │                                    │
-                    │         ▼  (Route Table: 0.0.0.0/0 → GWLB)  │
-                    │  Gateway Load Balancer                       │
-                    │  (GENEVE protocol, port 6081)                │
-                    │         │                                    │
-                    │         ▼                                    │
-                    │  Security Appliance Fleet                    │
-                    │  (Palo Alto, Fortinet, CheckPoint, etc.)     │
-                    │         │                                    │
-                    │         ▼  (Traffic returned after inspect)  │
-                    │  Gateway Load Balancer (returns traffic)     │
-                    │         │                                    │
-                    │         ▼                                    │
-                    │  Application Servers (EC2, etc.)             │
-                    └──────────────────────────────────────────────┘
-```
-
-### GWLB Key Features
-
-| Feature | Detail |
-|---|---|
-| **GENEVE Protocol** | Encapsulates packets on port 6081 — preserves original packet |
-| **Transparent Inspection** | Appliances see original source/dest IPs |
-| **Bump-in-the-Wire** | Traffic flows through appliances without changing routing |
-| **GWLB Endpoint** | VPC endpoint that intercepts traffic via route tables |
-| **Horizontal Scaling** | Scale appliance fleet automatically |
-| **Flow Stickiness** | Same flow always goes to same appliance (5-tuple hash) |
-
-### When to Use GWLB
-
-```
-Use GWLB when you need:
-  ✓ Third-party firewall (Palo Alto, Fortinet, CheckPoint)
-  ✓ Intrusion Detection/Prevention (IDS/IPS)
-  ✓ Deep Packet Inspection (DPI)
-  ✓ Centralized security inspection across multiple VPCs
-  ✓ Compliance requiring all traffic to pass through security appliances
-```
-
-> 💡 **Exam Tip:** If the question mentions "third-party virtual appliances", "inline inspection", "transparent security", or "GENEVE" — the answer is GWLB.
-
----
-
-## 🎯 When to Use Which Type — Decision Tree
-
-```
-                    ┌─────────────────────────────┐
-                    │   What does your app need?   │
-                    └──────────────┬──────────────┘
-                                   │
-              ┌────────────────────┼────────────────────┐
-              │                    │                    │
-              ▼                    ▼                    ▼
-   Third-party firewall/    HTTP/HTTPS traffic?   TCP/UDP/extreme
-   security appliance?      Layer 7 routing?      performance?
-              │                    │                    │
-              ▼                    ▼                    ▼
-           GWLB                  ALB                  NLB
-                                  │                    │
-                         ┌────────┴──────┐    ┌───────┴──────┐
-                         │               │    │              │
-                    Microservices    WebSocket  Static IP   UDP traffic
-                    Path routing     gRPC       PrivateLink  Gaming/IoT
-                    Cognito auth     Lambda     Real client  Financial
-                    WAF              targets    IP needed    trading
-```
-
-| Scenario | Best Choice | Why |
-|---|---|---|
-| Web application with `/api` and `/web` paths | **ALB** | Content-based routing |
-| Real-time gaming server (UDP) | **NLB** | UDP support, ultra-low latency |
-| Need to whitelist a fixed IP for firewall rules | **NLB** | Static Elastic IP per AZ |
-| Microservices on ECS/EKS | **ALB** | Container-aware, path/host routing |
-| Lambda function as backend | **ALB** | Only LB that supports Lambda targets |
-| Palo Alto firewall inspection | **GWLB** | Virtual appliance fleet management |
-| PrivateLink service endpoint | **NLB** | NLB is required for PrivateLink |
-| User authentication before app access | **ALB** | Cognito/OIDC integration |
-| Financial trading (microsecond matters) | **NLB** | Single-digit ms latency |
-| Legacy EC2-Classic app | **CLB** | Only option (but migrate ASAP) |
-| NLB + content routing combined | **NLB → ALB** | Chain NLB (static IP) → ALB (routing) |
-
----
-
-## 🔊 Listeners & Rules — Deep Dive
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/ELBListners.png" width="750"/>
-</p>
-
-### Listener Configuration
-
-A **Listener** is the entry point of your load balancer. It defines:
-- **Protocol** — HTTP, HTTPS, TCP, UDP, TLS, TCP_UDP
-- **Port** — 1–65535
-- **Default Action** — what to do if no rule matches
-
-```
-ALB Listener Example:
-  Protocol: HTTPS
-  Port: 443
-  SSL Certificate: arn:aws:acm:us-east-1:123:certificate/abc
-  Default Action: Forward to TG-Default
-
-  Rules:
-    Priority 1: IF path-pattern = /api/* → Forward to TG-API (weight: 80%)
-                                         → Forward to TG-API-v2 (weight: 20%)
-    Priority 2: IF host-header = admin.example.com → Authenticate (Cognito)
-                                                    → Forward to TG-Admin
-    Priority 3: IF http-header X-Beta = true → Forward to TG-Beta
-    Default:    Forward to TG-Default
-```
-
-### Rule Priority
-
-- Rules are evaluated **top to bottom** by priority number (1 = highest)
-- **Default rule** always has the lowest priority (evaluated last)
-- First matching rule wins — subsequent rules are NOT evaluated
-
-### Weighted Target Groups (ALB)
-
-Forward action can split traffic across multiple target groups with weights:
-
-```
-Rule: Forward to:
-  ├── TG-Production  (weight: 90)  → 90% of traffic
-  └── TG-Canary      (weight: 10)  → 10% of traffic
-
-Use case: Canary deployments, A/B testing, blue/green deployments
-```
-
-> 📸 **Visual diagrams throughout this guide are sourced from [Adrian Cantrill's AWS SAA-C03 course](https://learn.cantrill.io) — highly recommended for anyone serious about AWS certifications.**
-
----
-
-*Continued in Part 2 → Cross-Zone Load Balancing, Health Checks, Sticky Sessions, SSL/TLS, and Connection Draining*
-9:T4ec9,# <img src="https://icon.icepanel.io/AWS/svg/Networking-Content-Delivery/Elastic-Load-Balancing.svg" width="40" align="center"/> Amazon ELB — Complete Guide for AWS Solutions Architect Associate
-### Part 2 of 3 — Cross-Zone LB, Health Checks, Sticky Sessions, SSL/TLS & Connection Draining
-
----
-
-## ⚖️ Cross-Zone Load Balancing
-
-This is one of the most important and most tested ELB concepts. Understanding it requires understanding how ELB nodes work.
-
-### The Problem Without Cross-Zone Load Balancing
-
-```
-Scenario: 2 AZs, AZ-A has 2 targets, AZ-B has 8 targets
-DNS returns both ELB node IPs equally (50/50 split)
-
-WITHOUT Cross-Zone Load Balancing:
-─────────────────────────────────────────────────────────
-  Client requests (100 total)
-       │
-       ├── 50 requests → ELB Node AZ-A
-       │                      │
-       │              ┌───────┴───────┐
-       │              ▼               ▼
-       │         Target A-1       Target A-2
-       │         (25 req)         (25 req)   ← OVERLOADED
-       │
-       └── 50 requests → ELB Node AZ-B
-                              │
-              ┌───────┬───────┼───────┬───────┐
-              ▼       ▼       ▼       ▼       ▼
-           B-1(6) B-2(6) B-3(6) B-4(6) ... B-8(6) ← UNDERLOADED
-
-Result: AZ-A targets handle 25 req each, AZ-B targets handle ~6 req each
-        UNEVEN distribution — AZ-A targets are 4x more loaded!
-```
-
-### With Cross-Zone Load Balancing Enabled
-
-```
-WITH Cross-Zone Load Balancing:
-─────────────────────────────────────────────────────────
-  Client requests (100 total)
-       │
-       ├── 50 requests → ELB Node AZ-A ──────────────────────────────┐
-       │                      │                                       │
-       │              Distributes across ALL 10 targets in ALL AZs    │
-       │                                                              │
-       └── 50 requests → ELB Node AZ-B ──────────────────────────────┘
-                              │
-              Each of the 10 targets receives exactly 10 requests
-              (regardless of which AZ they are in)
-
-Result: All 10 targets handle 10 req each — PERFECTLY EVEN ✅
-```
-
-### Cross-Zone Behavior Per ELB Type
-
-| ELB Type | Default | Can Change? | Inter-AZ Data Transfer Cost |
-|---|---|---|---|
-| **ALB** | ✅ Always ON | ❌ Cannot disable | Free (no charge) |
-| **NLB** | ❌ OFF | ✅ Enable per TG | 💰 Charged (inter-AZ data) |
-| **GWLB** | ❌ OFF | ✅ Enable per TG | 💰 Charged (inter-AZ data) |
-| **CLB** | ❌ OFF | ✅ Enable | Free if enabled |
-
-### Cross-Zone — Zonal Shift Interaction
-
-When Cross-Zone is **disabled** on NLB, each AZ node only routes to targets in its own AZ. This enables **Zonal Shift** — you can shift traffic away from an impaired AZ without affecting other AZs.
-
-```
-Cross-Zone OFF + Zonal Shift:
-  AZ-A impaired → Shift AZ-A traffic to AZ-B
-  AZ-B node handles all traffic → AZ-B targets only
-  AZ-A targets receive zero traffic
-
-Cross-Zone ON:
-  Zonal Shift still works but traffic from AZ-B node
-  may still reach AZ-A targets (cross-zone routing)
-```
-
-> 💡 **Exam Tip:** ALB always has Cross-Zone ON and it's free. NLB has it OFF by default and charges for inter-AZ data transfer when enabled. This is a common exam trap.
-
----
-
-## 🏥 Health Checks — How ELB Knows a Target is Alive
-
-Health checks are the mechanism by which ELB determines whether a target is healthy and eligible to receive traffic. An unhealthy target is **automatically removed** from rotation.
-
-### Health Check Flow
-
-```
-ELB Node ──── Health Check Request ────► Target
-              (every interval seconds)
-                                          │
-                                    ┌─────▼──────┐
-                                    │  Response? │
-                                    └─────┬──────┘
-                                          │
-                    ┌─────────────────────┼─────────────────────┐
-                    │                     │                     │
-                    ▼                     ▼                     ▼
-             2xx/3xx HTTP           Timeout / 5xx         Connection
-             response               response              refused
-                    │                     │                     │
-                    ▼                     ▼                     ▼
-            HealthyThreshold      UnhealthyThreshold     UnhealthyThreshold
-            count reached         count reached          count reached
-                    │                     │                     │
-                    ▼                     ▼                     ▼
-              HEALTHY ✅            UNHEALTHY ❌           UNHEALTHY ❌
-         (receives traffic)     (removed from rotation) (removed from rotation)
-```
-
-### Health Check Configuration
-
-| Parameter | Description | Default | Recommended |
-|---|---|---|---|
-| **Protocol** | HTTP, HTTPS, TCP, UDP | Varies | Match your app protocol |
-| **Path** | HTTP path to check (e.g., `/health`) | `/` | Dedicated `/health` endpoint |
-| **Port** | Port to check | Traffic port | Same as traffic port |
-| **Healthy Threshold** | Consecutive successes to mark healthy | 3 | 2–3 |
-| **Unhealthy Threshold** | Consecutive failures to mark unhealthy | 3 | 2–3 |
-| **Timeout** | Seconds to wait for response | 5s | 5–10s |
-| **Interval** | Seconds between checks | 30s | 10–30s |
-| **Success Codes** | HTTP codes considered healthy | 200 | 200-299 |
-
-### Health Check Best Practices
-
-```
-❌ Bad health check endpoint:
-   GET /  → Returns 200 but also queries DB, calls external APIs
-   Problem: Slow, expensive, cascading failures
-
-✅ Good health check endpoint:
-   GET /health → Returns {"status": "ok"} with 200
-   Checks: App is running, can accept connections
-   Does NOT check: DB, external services (those have their own health)
-
-✅ Deep health check (optional):
-   GET /health/deep → Checks DB connectivity, cache, dependencies
-   Use for: Readiness probes, not liveness probes
-```
-
-### Target States
-
-| State | Description |
-|---|---|
-| **initial** | Target just registered, health check not yet run |
-| **healthy** | Passing health checks, receiving traffic |
-| **unhealthy** | Failing health checks, NOT receiving traffic |
-| **unused** | Target registered but target group not attached to LB |
-| **draining** | Deregistering — existing connections finishing, no new traffic |
-| **unavailable** | Health checks disabled |
-
----
-
-## 🍪 Sticky Sessions (Session Affinity)
-
-By default, ELB distributes each request independently. Sticky sessions ensure a **user's requests always go to the same target** for the duration of their session.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/SessionStickiness.png" width="750"/>
-</p>
-
-### How Stickiness Works
-
-```
-WITHOUT Stickiness:
-  User Session:
-    Request 1 → Target A (creates session data)
-    Request 2 → Target B (no session data — user logged out!)
-    Request 3 → Target C (no session data — broken experience)
-
-WITH Stickiness:
-  User Session:
-    Request 1 → Target A (creates session data, LB sets cookie)
-    Request 2 → Target A (cookie present, LB routes to same target)
-    Request 3 → Target A (consistent experience ✅)
-```
-
-### Stickiness Types (ALB)
-
-| Type | Cookie Name | Duration | Who Sets Cookie |
-|---|---|---|---|
-| **Duration-based** | `AWSALB` | 1 second – 7 days | ALB generates and manages |
-| **Application-based** | Custom name | App-defined | App generates, ALB uses it |
-
-### Duration-Based Stickiness
-
-```
-ALB sets cookie: AWSALB=<encrypted-target-info>; Expires=<duration>
-
-Flow:
-  1. First request → ALB picks target (round robin)
-  2. ALB sets AWSALB cookie in response
-  3. Subsequent requests include AWSALB cookie
-  4. ALB reads cookie → routes to same target
-  5. Cookie expires → next request goes through normal routing
-```
-
-### Application-Based Stickiness
-
-```
-App sets cookie: MyAppSession=<session-id>
-
-Flow:
-  1. App sets its own session cookie
-  2. ALB reads the app cookie name (configured in TG settings)
-  3. ALB uses the cookie value to determine target affinity
-  4. ALB also sets AWSALBAPP cookie to track the mapping
-
-Use when: App already manages sessions and you want LB to respect them
-```
-
-### Stickiness Caveats
-
-```
-⚠️  Problems with stickiness:
-  - Uneven load distribution (one target gets all requests from heavy users)
-  - If target becomes unhealthy, sticky users are re-routed (session lost anyway)
-  - Doesn't work well with auto-scaling (new targets don't get sticky traffic)
-
-✅  Better alternative:
-  - Store session data externally: ElastiCache (Redis), DynamoDB
-  - Stateless application design — any target can handle any request
-  - Use stickiness only when external session storage is not feasible
-```
-
-> 💡 **Exam Tip:** Stickiness is enabled at the **Target Group** level, not the listener level. NLB does not support cookie-based stickiness (it uses 5-tuple hash for flow persistence instead).
-
----
-
-## 🔐 SSL/TLS Termination & SNI
-
-### SSL Termination
-
-ELB can terminate SSL/TLS connections, offloading the cryptographic work from your backend servers.
-
-```
-SSL Termination at ALB/NLB:
-─────────────────────────────────────────────────────────
-  Client ──── HTTPS (TLS) ────► ELB (decrypts here)
-                                      │
-                                      ▼
-                              ELB ──── HTTP ────► Target
-                              (plain text internally)
-
-Benefits:
-  ✓ Backend servers don't need SSL certs
-  ✓ Reduced CPU load on backend
-  ✓ Centralized certificate management via ACM
-  ✓ ALB can inspect HTTP headers for routing
-
-End-to-End Encryption (NLB TLS Pass-Through):
-─────────────────────────────────────────────────────────
-  Client ──── TLS ────► NLB (passes raw TCP) ──── TLS ────► Target
-  (NLB never decrypts — target holds the cert)
-
-Use when:
-  ✓ Compliance requires E2E encryption
-  ✓ Mutual TLS (mTLS) required
-  ✓ Backend must see original TLS handshake
-```
-
-### SNI — Server Name Indication
-
-SNI allows **multiple SSL certificates** on a single ALB, one per domain/subdomain.
-
-```
-Without SNI (CLB limitation):
-  One CLB = One SSL cert = One domain
-  app.example.com → CLB-1 (cert for app.example.com)
-  api.example.com → CLB-2 (cert for api.example.com)  ← Expensive!
-
-With SNI (ALB/NLB):
-  One ALB = Multiple SSL certs = Multiple domains
-  app.example.com ─┐
-  api.example.com ─┤─► Single ALB ─► Different target groups
-  admin.example.com┘   (ALB reads SNI header, picks correct cert)
-
-How SNI works:
-  1. Client sends TLS ClientHello with SNI extension
-     (includes the hostname: "api.example.com")
-  2. ALB reads SNI, selects matching certificate
-  3. TLS handshake completes with correct cert
-  4. Request routed based on host header rule
-```
-
-### Certificate Management with ACM
-
-```
-AWS Certificate Manager (ACM) Integration:
-  ✓ Free public SSL/TLS certificates
-  ✓ Auto-renewal (no manual cert rotation)
-  ✓ Direct attachment to ALB/NLB listeners
-  ✓ Wildcard certs: *.example.com covers all subdomains
-
-CLI: Attach cert to ALB listener
-aws elbv2 add-listener-certificates \
-  --listener-arn arn:aws:elasticloadbalancing:... \
-  --certificates CertificateArn=arn:aws:acm:...
-```
-
-### Security Policies (TLS Versions & Ciphers)
-
-ALB and NLB let you choose a **Security Policy** that defines which TLS versions and cipher suites are supported:
-
-| Policy | TLS Versions | Use Case |
-|---|---|---|
-| `ELBSecurityPolicy-TLS13-1-2-2021-06` | TLS 1.2, 1.3 | ✅ Recommended — modern clients |
-| `ELBSecurityPolicy-TLS13-1-3-2021-06` | TLS 1.3 only | Maximum security, newest clients only |
-| `ELBSecurityPolicy-2016-08` | TLS 1.0, 1.1, 1.2 | Legacy clients (avoid) |
-| `ELBSecurityPolicy-FS` | TLS 1.2 + Forward Secrecy | Compliance requiring FS |
-
-> 💡 **Exam Tip:** Use `ELBSecurityPolicy-TLS13-1-2-2021-06` for most workloads. Avoid policies that include TLS 1.0/1.1 — they are deprecated and insecure.
-
----
-
-## 🔌 Connection Draining (Deregistration Delay)
-
-When a target is deregistered or marked unhealthy, ELB needs to handle **in-flight requests** gracefully. Connection Draining (called **Deregistration Delay** in ALB/NLB) handles this.
-
-### How It Works
-
-```
-Normal State:
-  ELB ──── new requests ────► Target A (healthy, registered)
-
-Deregistration Triggered (scale-in, deployment, maintenance):
-  ┌─────────────────────────────────────────────────────────┐
-  │  DRAINING STATE                                         │
-  │                                                         │
-  │  ELB ──── NO new requests ────► Target A               │
-  │  ELB ──── existing connections still active ──► Target A│
-  │                                                         │
-  │  Timer starts: 0 ──────────────────────► 300 seconds   │
-  │                                                         │
-  │  When all connections close OR timer expires:           │
-  │  Target A is fully deregistered                         │
-  └─────────────────────────────────────────────────────────┘
-```
-
-### Configuration
-
-| Setting | Range | Default | Recommendation |
-|---|---|---|---|
-| **Deregistration Delay** | 0 – 3600 seconds | 300 seconds | Match your longest request duration |
-
-```
-Tuning guidance:
-  Short-lived requests (API, microservices): 30–60 seconds
-  Long-lived requests (file uploads, reports): 300–600 seconds
-  WebSocket connections: Match session timeout
-  Set to 0: Immediate deregistration (use only if stateless + fast)
-```
-
-> 💡 **Exam Tip:** Connection Draining = CLB term. Deregistration Delay = ALB/NLB term. Same concept, different names. Setting it to 0 means immediate deregistration — in-flight requests will be dropped.
-
----
-
-## 📊 Target Groups — Deep Dive
-
-Target Groups are the bridge between the load balancer and your actual resources. They are configured independently and can be reused across multiple load balancers.
-
-### Target Group Configuration
-
-```
-Target Group Settings:
-  ├── Target Type: instance | ip | lambda | alb
-  ├── Protocol: HTTP | HTTPS | TCP | UDP | TLS | TCP_UDP
-  ├── Port: 1–65535
-  ├── VPC: Which VPC targets reside in
-  ├── Protocol Version: HTTP1 | HTTP2 | gRPC (ALB only)
-  ├── Health Check: (see Health Checks section)
-  ├── Stickiness: enabled/disabled + type + duration
-  ├── Deregistration Delay: 0–3600 seconds
-  ├── Slow Start Duration: 0–900 seconds
-  └── Load Balancing Algorithm: Round Robin | LOR | Random
-```
-
-### Load Balancing Algorithms (ALB)
-
-| Algorithm | How It Works | Best For |
-|---|---|---|
-| **Round Robin** | Requests distributed sequentially to each target | Homogeneous targets, equal capacity |
-| **Least Outstanding Requests (LOR)** | New request goes to target with fewest active requests | Heterogeneous targets, varying request duration |
-| **Random** | Random target selection | Simple distribution, testing |
-| **Weighted Random** (with Anomaly Mitigation) | Random + avoids targets showing anomalies | Production workloads with auto-scaling |
-
-### Slow Start Mode
-
-When a new target registers, it may not be fully warmed up (JVM, caches, etc.). Slow Start gradually increases traffic to new targets:
-
-```
-Slow Start Duration: 30 seconds (example)
-
-  t=0s:   New target registered → receives 0% of its fair share
-  t=10s:  Receives ~33% of its fair share
-  t=20s:  Receives ~66% of its fair share
-  t=30s:  Receives 100% of its fair share (fully ramped)
-
-Use case: Java apps (JVM warmup), apps with in-memory caches
-```
-
-### Multi-Target Group Routing (Weighted)
-
-```
-ALB Rule with weighted forwarding:
-  Forward to:
-    ├── TG-Blue   (weight: 100) → 100% traffic (current production)
-    └── TG-Green  (weight: 0)   → 0% traffic (new version, not live)
-
-  Canary release:
-    ├── TG-Blue   (weight: 90)  → 90% traffic
-    └── TG-Green  (weight: 10)  → 10% traffic (canary)
-
-  Full cutover:
-    ├── TG-Blue   (weight: 0)   → 0% traffic (old version)
-    └── TG-Green  (weight: 100) → 100% traffic (new version)
-```
-
----
-
-## 🌍 Regional vs Global Architecture
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/RegionalandGlobalArchitecture-1.png" width="750"/>
-</p>
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/RegionalandGlobalArchitecture-2.png" width="750"/>
-</p>
-
-### ELB is Regional
-
-ELB operates within a **single AWS region**. It distributes traffic across AZs within that region but does NOT span regions.
-
-```
-Regional Architecture (Single Region):
-  Route 53 ──► ALB (us-east-1) ──► Targets in us-east-1 AZs
-
-Global Architecture (Multi-Region):
-  Route 53 (Latency/Geolocation routing)
-       │
-       ├──► ALB (us-east-1) ──► Targets in us-east-1
-       ├──► ALB (eu-west-1) ──► Targets in eu-west-1
-       └──► ALB (ap-southeast-1) ──► Targets in ap-southeast-1
-
-OR use AWS Global Accelerator:
-  Global Accelerator (Anycast IPs) ──► ALB/NLB in multiple regions
-  (Better performance than Route 53 — uses AWS backbone network)
-```
-
-### ELB + Auto Scaling Group Integration
-
-```
-Auto Scaling Group + ALB:
-  ┌─────────────────────────────────────────────────────┐
-  │                                                     │
-  │  ALB ──► Target Group ──► Auto Scaling Group        │
-  │                                │                    │
-  │                    ┌───────────┼───────────┐        │
-  │                    ▼           ▼           ▼        │
-  │                  EC2-1       EC2-2       EC2-3       │
-  │                                                     │
-  │  Scale Out: New EC2 launched → auto-registered in TG│
-  │  Scale In:  EC2 terminating → connection draining   │
-  │             → deregistered from TG → terminated     │
-  └─────────────────────────────────────────────────────┘
-
-Key: ASG uses ELB health checks (not just EC2 status checks)
-     If ELB marks instance unhealthy → ASG terminates and replaces it
-```
-
----
-
-*Continued in Part 3 → Access Logs, Monitoring, Security, PrivateLink, Pricing & Exam Tips*
-a:T70ac,# <img src="https://icon.icepanel.io/AWS/svg/Networking-Content-Delivery/Elastic-Load-Balancing.svg" width="40" align="center"/> Amazon ELB — Complete Guide for AWS Solutions Architect Associate
-### Part 3 of 3 — Security, Monitoring, PrivateLink, Pricing & Exam Cheat Sheet
-
----
-
-## 🔒 ELB Security Architecture
-
-### Security Groups (ALB Only)
-
-ALB supports **Security Groups**. NLB and GWLB do **not** support security groups — they use NACLs and route table controls instead.
-
-```
-ALB Security Group Architecture:
-─────────────────────────────────────────────────────────────────
-  Internet
-      │
-      ▼
-  ALB Security Group (sg-alb):
-    Inbound:  Allow TCP 443 from 0.0.0.0/0 (HTTPS from internet)
-    Inbound:  Allow TCP 80  from 0.0.0.0/0 (HTTP, redirect to HTTPS)
-    Outbound: Allow TCP 8080 to sg-app (to reach app servers)
-      │
-      ▼
-  EC2 Security Group (sg-app):
-    Inbound:  Allow TCP 8080 from sg-alb ONLY
-              (NOT from 0.0.0.0/0 — backend never exposed directly)
-    Outbound: Allow all (or restrict as needed)
-
-Key: Backend EC2s reference the ALB security group as source
-     This ensures ONLY the ALB can reach the backend
-     Direct internet access to EC2 is blocked ✅
-```
-
-### NLB — No Security Groups
-
-```
-NLB Security Model:
-  NLB does NOT have security groups
-  Traffic control is done via:
-    ├── Target Security Groups (EC2 SGs must allow NLB traffic)
-    ├── Network ACLs (subnet level)
-    └── Route Tables
-
-  ⚠️  NLB preserves client IP → EC2 SG must allow the CLIENT IP range
-      (not the NLB IP, because NLB passes through the real client IP)
-
-  For internet-facing NLB:
-    EC2 SG Inbound: Allow TCP <port> from 0.0.0.0/0
-    (or restrict to known client IP ranges)
-```
-
-### WAF Integration (ALB Only)
-
-```
-AWS WAF + ALB:
-  ┌─────────────────────────────────────────────────────┐
-  │  Internet ──► WAF Web ACL ──► ALB ──► Targets       │
-  │                                                     │
-  │  WAF Rules:                                         │
-  │    ├── AWS Managed Rules (OWASP Top 10)             │
-  │    ├── Rate limiting (DDoS protection)              │
-  │    ├── IP reputation lists                          │
-  │    ├── Geo blocking                                 │
-  │    └── Custom rules (SQL injection, XSS, etc.)      │
-  └─────────────────────────────────────────────────────┘
-
-WAF is NOT available for NLB (Layer 4 — no HTTP inspection)
-Use AWS Shield Advanced for NLB DDoS protection
-```
-
-### AWS Shield Integration
-
-| Shield Tier | Protection | Cost | ELB Support |
-|---|---|---|---|
-| **Shield Standard** | L3/L4 DDoS protection | Free (automatic) | All ELB types |
-| **Shield Advanced** | L3/L4/L7 DDoS + 24/7 DRT + cost protection | $3,000/month | All ELB types |
-
-### Internal vs Internet-Facing ELB
-
-```
-Internet-Facing ELB:
-  ├── Has a public DNS name resolving to public IPs
-  ├── ELB nodes have public IP addresses
-  ├── Targets can be in private subnets (ELB bridges public → private)
-  └── Subnet requirement: Public subnet with IGW route
-
-Internal ELB:
-  ├── Has a private DNS name resolving to private IPs only
-  ├── ELB nodes have only private IP addresses
-  ├── Used for internal microservices communication
-  └── Subnet requirement: Any subnet (public or private)
-
-Architecture Pattern:
-  Internet ──► Internet-Facing ALB (public subnet)
-                      │
-                      ▼
-               Internal ALB (private subnet)
-                      │
-                      ▼
-               Backend Services (private subnet)
-```
-
----
-
-## 🔗 AWS PrivateLink & NLB
-
-PrivateLink allows you to expose a service to other VPCs or AWS accounts **without VPC peering, IGW, or NAT** — traffic stays on the AWS private network.
-
-```
-PrivateLink Architecture:
-─────────────────────────────────────────────────────────────────
-  Service Provider VPC (your service):
-    ┌─────────────────────────────────────────┐
-    │  NLB ──► EC2 / ECS / Lambda targets     │
-    │   │                                     │
-    │   └──► VPC Endpoint Service             │
-    │        (PrivateLink service)            │
-    └─────────────────────────────────────────┘
-                      │
-              AWS Private Network
-              (no internet, no peering)
-                      │
-  Service Consumer VPC (customer):
-    ┌─────────────────────────────────────────┐
-    │  Interface VPC Endpoint                 │
-    │  (ENI with private IP in consumer VPC)  │
-    │         │                               │
-    │         ▼                               │
-    │  Consumer App ──► Endpoint ──► Service  │
-    └─────────────────────────────────────────┘
-
-Key: NLB is REQUIRED as the backend for PrivateLink endpoint services
-     ALB cannot be used as a PrivateLink backend
-```
-
-### PrivateLink Use Cases
-
-```
-✓ SaaS providers exposing services to customers
-✓ Shared services VPC (logging, monitoring, auth) accessed by app VPCs
-✓ AWS Marketplace services
-✓ Cross-account service sharing without VPC peering
-✓ Compliance: traffic never leaves AWS network
-```
-
----
-
-## 📊 Monitoring & Observability
-
-### CloudWatch Metrics — ALB
-
-| Metric | Description | Alert Threshold |
-|---|---|---|
-| `RequestCount` | Total requests processed | Baseline + 2x stddev |
-| `TargetResponseTime` | Latency from LB to target response | > 1s (app-dependent) |
-| `HTTPCode_Target_2XX_Count` | Successful responses from targets | — |
-| `HTTPCode_Target_4XX_Count` | Client errors from targets | Spike = bad input/auth issues |
-| `HTTPCode_Target_5XX_Count` | Server errors from targets | > 0 = investigate |
-| `HTTPCode_ELB_5XX_Count` | Errors generated by ALB itself | > 0 = LB issue |
-| `HealthyHostCount` | Number of healthy targets | < min threshold = alert |
-| `UnHealthyHostCount` | Number of unhealthy targets | > 0 = alert |
-| `ActiveConnectionCount` | Active TCP connections | Capacity planning |
-| `NewConnectionCount` | New TCP connections per second | Capacity planning |
-| `ProcessedBytes` | Total bytes processed | Cost/capacity monitoring |
-| `RuleEvaluations` | Number of rules evaluated | Performance tuning |
-
-### CloudWatch Metrics — NLB
-
-| Metric | Description |
-|---|---|
-| `ActiveFlowCount` | Active TCP/UDP flows |
-| `NewFlowCount` | New flows per second |
-| `ProcessedBytes` | Total bytes processed |
-| `HealthyHostCount` | Healthy targets |
-| `UnHealthyHostCount` | Unhealthy targets |
-| `TCP_Client_Reset_Count` | Resets sent from client to target |
-| `TCP_Target_Reset_Count` | Resets sent from target to client |
-| `TCP_ELB_Reset_Count` | Resets generated by NLB |
-
-### Access Logs
-
-ALB and NLB can log every request to **S3**. Access logs are disabled by default.
-
-```
-ALB Access Log Fields (key ones):
-  timestamp | elb | client:port | target:port | request_processing_time
-  target_processing_time | response_processing_time | elb_status_code
-  target_status_code | received_bytes | sent_bytes | request
-  user_agent | ssl_cipher | ssl_protocol | target_group_arn
-  trace_id | domain_name | chosen_cert_arn | matched_rule_priority
-  request_creation_time | actions_executed | redirect_url
-  error_reason | target:port_list | target_status_code_list
-
-Enable via:
-aws elbv2 modify-load-balancer-attributes \
-  --load-balancer-arn <arn> \
-  --attributes Key=access_logs.s3.enabled,Value=true \
-               Key=access_logs.s3.bucket,Value=my-logs-bucket \
-               Key=access_logs.s3.prefix,Value=my-alb
-```
-
-### Request Tracing
-
-ALB adds `X-Amzn-Trace-Id` header to every request for distributed tracing with **AWS X-Ray**:
-
-```
-X-Amzn-Trace-Id: Root=1-67891233-abcdef012345678912345678
-
-Integrate with X-Ray:
-  ALB ──► X-Ray Trace ──► Target (propagates trace ID)
-  View full request path in X-Ray Service Map
-```
-
----
-
-## 💰 Pricing Model
-
-ELB pricing has two components: **hourly charge** + **LCU (Load Balancer Capacity Unit)** charge.
-
-### Load Balancer Capacity Units (LCU)
-
-LCUs measure the dimensions on which the load balancer processes your traffic. You are charged for the highest LCU dimension used per hour.
-
-### ALB Pricing Dimensions
-
-| Dimension | 1 LCU = |
-|---|---|
-| **New connections** | 25 new connections/second |
-| **Active connections** | 3,000 active connections/minute |
-| **Processed bytes** | 1 GB/hour (EC2/IP targets), 0.4 GB/hour (Lambda) |
-| **Rule evaluations** | 1,000 rule evaluations/second |
-
-### NLB Pricing Dimensions
-
-| Dimension | 1 LCU = |
-|---|---|
-| **New flows** | 800 new TCP flows/second, 400 new UDP flows/second |
-| **Active flows** | 100,000 active TCP flows, 200,000 active UDP flows |
-| **Processed bytes** | 1 GB/hour |
-
-### Approximate Costs (us-east-1)
-
-| ELB Type | Hourly Rate | LCU Rate |
-|---|---|---|
-| **ALB** | $0.008/hour | $0.008/LCU-hour |
-| **NLB** | $0.008/hour | $0.006/LCU-hour |
-| **GWLB** | $0.008/hour | $0.004/LCU-hour |
-| **CLB** | $0.025/hour | $0.008/GB processed |
-
-> ⚠️ Prices are approximate. Always check [AWS Pricing](https://aws.amazon.com/elasticloadbalancing/pricing/) for current rates.
-
-### Cost Optimization Tips
-
-```
-✓ Delete unused load balancers (hourly charge even with 0 traffic)
-✓ Use one ALB with multiple listeners/rules instead of multiple ALBs
-✓ Enable Cross-Zone on NLB only if needed (inter-AZ data transfer cost)
-✓ Use target group weights for gradual deployments (avoid duplicate LBs)
-✓ Monitor LCU metrics to right-size and predict costs
-✓ Use AWS Cost Explorer to track ELB spend by tag
-```
-
----
-
-## 🏛️ Advanced Architectural Patterns
-
-### Pattern 1 — Multi-Tier Architecture
-
-```
-                    ┌─────────────────────────────────────────────┐
-                    │              Multi-Tier App                  │
-                    │                                             │
-  Internet ────────►│  Internet-Facing ALB                       │
-                    │  (Public Subnets, AZ-A + AZ-B)             │
-                    │         │                                   │
-                    │         ▼                                   │
-                    │  Web Tier ASG (Private Subnets)             │
-                    │  EC2: Nginx / React / Static                │
-                    │         │                                   │
-                    │         ▼                                   │
-                    │  Internal ALB                               │
-                    │  (Private Subnets, AZ-A + AZ-B)            │
-                    │         │                                   │
-                    │    ┌────┴────┐                              │
-                    │    ▼         ▼                              │
-                    │  API TG   Auth TG                           │
-                    │  (path=/api) (path=/auth)                   │
-                    │    │         │                              │
-                    │    ▼         ▼                              │
-                    │  App Tier ASG (Private Subnets)             │
-                    │         │                                   │
-                    │         ▼                                   │
-                    │  RDS / ElastiCache (Private Subnets)        │
-                    └─────────────────────────────────────────────┘
-```
-
-### Pattern 2 — Blue/Green Deployment
-
-```
-Blue/Green with ALB Weighted Target Groups:
-─────────────────────────────────────────────────────────────────
-  Phase 1 (Production on Blue):
-    ALB Rule → TG-Blue (100%) | TG-Green (0%)
-
-  Phase 2 (Deploy Green, test):
-    Deploy new version to TG-Green
-    Test via direct target group health checks
-
-  Phase 3 (Canary — 10% to Green):
-    ALB Rule → TG-Blue (90%) | TG-Green (10%)
-    Monitor error rates, latency
-
-  Phase 4 (Full cutover):
-    ALB Rule → TG-Blue (0%) | TG-Green (100%)
-
-  Phase 5 (Rollback if needed):
-    ALB Rule → TG-Blue (100%) | TG-Green (0%)
-    (Instant — just weight change, no DNS TTL wait)
-```
-
-### Pattern 3 — Microservices with ALB
-
-```
-Single ALB → Multiple Microservices:
-─────────────────────────────────────────────────────────────────
-  ALB: api.example.com
-    │
-    ├── /users/*     → TG-Users-Service    (ECS Fargate)
-    ├── /orders/*    → TG-Orders-Service   (ECS Fargate)
-    ├── /payments/*  → TG-Payments-Service (ECS Fargate)
-    ├── /auth/*      → TG-Auth-Service     (Lambda)
-    └── /static/*    → Redirect to S3 URL
-
-Benefits:
-  ✓ One ALB = one DNS name = one SSL cert
-  ✓ Each service scales independently
-  ✓ Path-based routing at Layer 7
-  ✓ No service mesh needed for basic routing
-```
-
-### Pattern 4 — NLB + ALB Chaining
-
-```
-Use case: Need static IP (NLB) + content routing (ALB)
-─────────────────────────────────────────────────────────────────
-  Client ──► NLB (Static Elastic IP, whitelisted by client firewall)
-                  │
-                  ▼
-             ALB (target type: alb)
-                  │
-          ┌───────┼───────┐
-          ▼       ▼       ▼
-        TG-A    TG-B    TG-C
-      (path-based routing)
-
-Why: Enterprise clients require fixed IPs for firewall whitelisting
-     but you also need ALB's content-based routing capabilities
-```
-
-### Pattern 5 — Centralized Security with GWLB
-
-```
-Hub-and-Spoke Security Architecture:
-─────────────────────────────────────────────────────────────────
-  ┌─────────────────────────────────────────────────────────┐
-  │  Security VPC (Hub)                                     │
-  │  ┌─────────────────────────────────────────────────┐   │
-  │  │  GWLB ──► Palo Alto Firewall Fleet (ASG)        │   │
-  │  │           (inspect all traffic)                 │   │
-  │  └─────────────────────────────────────────────────┘   │
-  └─────────────────────────────────────────────────────────┘
-           │                    │                    │
-    GWLB Endpoint        GWLB Endpoint        GWLB Endpoint
-           │                    │                    │
-  ┌────────▼──────┐  ┌──────────▼────┐  ┌───────────▼───┐
-  │  App VPC A    │  │  App VPC B    │  │  App VPC C    │
-  │  (Spoke)      │  │  (Spoke)      │  │  (Spoke)      │
-  └───────────────┘  └───────────────┘  └───────────────┘
-
-All traffic from all VPCs passes through centralized firewall
-Route tables in each spoke VPC direct traffic to GWLB endpoint
-```
-
----
-
-## 🔑 Key Hacks & Hidden Behaviors
-
-These are the non-obvious behaviors that trip up architects and exam takers alike.
-
-### 1. ELB Subnet Requirements
-
-```
-Internet-Facing ALB/NLB:
-  ✓ Must be in PUBLIC subnets (with IGW route)
-  ✓ Minimum /27 subnet (at least 8 free IPs per AZ)
-  ✓ AWS recommends /24 or larger
-
-Internal ALB/NLB:
-  ✓ Can be in any subnet (public or private)
-  ✓ Same /27 minimum requirement
-
-⚠️  Common mistake: Putting internet-facing ALB in private subnet
-    Result: ALB created but unreachable from internet
-```
-
-### 2. ELB Does NOT Scale Instantly
-
-```
-ELB pre-warms automatically but has limits:
-  ✓ Handles gradual traffic increases automatically
-  ✗ Sudden massive traffic spikes can overwhelm ELB nodes
-
-Solution for sudden spikes:
-  ├── Contact AWS Support to pre-warm ELB (for known events)
-  ├── Use CloudFront in front of ALB (absorbs spike at edge)
-  └── Use AWS Global Accelerator (anycast routing + pre-warmed)
-
-503 "Service Unavailable" from ELB = No healthy targets
-502 "Bad Gateway" from ELB = Target returned invalid response
-504 "Gateway Timeout" from ELB = Target didn't respond in time
-```
-
-### 3. Idle Timeout
-
-```
-ALB Idle Timeout (default: 60 seconds):
-  If no data is sent on a connection for 60 seconds → connection closed
-  
-  Adjust for:
-    ├── Long-running requests: Increase to 300–3600s
-    ├── WebSocket: Match your WebSocket keepalive interval
-    └── File uploads: Set higher than max upload time
-
-aws elbv2 modify-load-balancer-attributes \
-  --load-balancer-arn <arn> \
-  --attributes Key=idle_timeout.timeout_seconds,Value=300
-```
-
-### 4. HTTP to HTTPS Redirect (Free, No Target Needed)
-
-```
-ALB can redirect HTTP → HTTPS without a target group:
-  Listener: HTTP:80
-  Default Action: Redirect to HTTPS:443 (301 Permanent)
-
-This is FREE — no target group, no EC2, no Lambda needed
-The ALB itself handles the redirect response
-
-aws elbv2 create-listener \
-  --load-balancer-arn <arn> \
-  --protocol HTTP --port 80 \
-  --default-actions Type=redirect,RedirectConfig="{Protocol=HTTPS,Port=443,StatusCode=HTTP_301}"
-```
-
-### 5. ALB Can Return Fixed Responses
-
-```
-ALB can return static responses without any backend:
-  Use cases:
-    ├── Maintenance page (503 with custom HTML)
-    ├── Health check endpoint (200 OK)
-    └── API versioning (404 for deprecated endpoints)
-
-Rule Action: Fixed Response
-  Status Code: 200
-  Content-Type: application/json
-  Message Body: {"status": "maintenance", "retry_after": 3600}
-```
-
-### 6. Target Group Can Have Zero Targets
-
-```
-Empty target group behavior:
-  ALB: Returns 503 to client
-  NLB: Connection times out
-
-Use case: Feature flags — route to empty TG to "disable" a feature
-          Gradually drain traffic before decommissioning a service
-```
-
-### 7. NLB Preserves Source IP — Security Group Implication
-
-```
-⚠️  Critical NLB behavior:
-  NLB passes the REAL client IP to targets
-  EC2 security groups must allow the CLIENT IP range
-
-  If your EC2 SG only allows the NLB IP → connections will be DROPPED
-  (because the packet arrives with the client's IP, not NLB's IP)
-
-  Fix: Allow the client IP range in EC2 SG
-  For internet-facing NLB: Allow 0.0.0.0/0 on the target port
-  For internal NLB: Allow the VPC CIDR or specific client CIDRs
-```
-
-### 8. ALB Desync Mitigation Mode
-
-```
-HTTP Desync attacks exploit differences in how HTTP parsers handle
-ambiguous requests (HTTP Request Smuggling).
-
-ALB Desync Mitigation Modes:
-  ├── Monitor:   Log but allow potentially dangerous requests
-  ├── Defensive: Drop ambiguous requests (default, recommended)
-  └── Strictest: Drop all non-RFC-compliant requests
-
-aws elbv2 modify-load-balancer-attributes \
-  --attributes Key=routing.http.desync_mitigation_mode,Value=defensive
-```
-
-### 9. Deletion Protection
-
-```
-Enable deletion protection to prevent accidental ELB deletion:
-  ✓ Prevents deletion via console, CLI, API
-  ✓ Must explicitly disable before deleting
-
-aws elbv2 modify-load-balancer-attributes \
-  --attributes Key=deletion_protection.enabled,Value=true
-
-⚠️  CloudFormation stack deletion will FAIL if deletion protection is ON
-    Always disable before stack teardown
-```
-
-### 10. ELB Access Log Delivery Delay
-
-```
-Access logs are delivered to S3 with a delay:
-  ALB: Logs delivered every 5 minutes
-  NLB: Logs delivered every 5 minutes
-
-⚠️  Access logs are NOT real-time
-    For real-time monitoring: Use CloudWatch metrics
-    For real-time logging: Use Kinesis Data Firehose via EventBridge
-```
-
----
-
-## 📋 Quick Reference — Exam Cheat Sheet
-
-### ELB Type Selection
-
-| Keyword in Question | Answer |
-|---|---|
-| "Content-based routing", "path routing", "host routing" | **ALB** |
-| "WebSocket", "gRPC", "HTTP/2" | **ALB** |
-| "Lambda target", "serverless backend" | **ALB** |
-| "Cognito", "OIDC", "authenticate users at LB" | **ALB** |
-| "WAF", "web application firewall" | **ALB** |
-| "Static IP", "Elastic IP on LB", "whitelist LB IP" | **NLB** |
-| "UDP", "DNS load balancing", "gaming", "IoT" | **NLB** |
-| "Extreme performance", "millions of requests", "microsecond" | **NLB** |
-| "PrivateLink", "VPC endpoint service" | **NLB** |
-| "Real client IP on backend natively" | **NLB** |
-| "Third-party firewall", "IDS/IPS", "virtual appliance" | **GWLB** |
-| "GENEVE protocol", "transparent inspection" | **GWLB** |
-| "Legacy", "EC2-Classic", "migrate from CLB" | **CLB → ALB/NLB** |
-
-### Cross-Zone Load Balancing
-
-| | ALB | NLB | GWLB |
-|---|---|---|---|
-| Default | ON | OFF | OFF |
-| Can disable | ❌ | ✅ | ✅ |
-| Inter-AZ cost | Free | Charged | Charged |
-
-### SSL/TLS
-
-| | ALB | NLB | CLB |
-|---|---|---|---|
-| SNI (multiple certs) | ✅ | ✅ | ❌ |
-| ACM integration | ✅ | ✅ | ✅ |
-| TLS pass-through | ❌ | ✅ | ❌ |
-| WAF attachment | ✅ | ❌ | ❌ |
-
-### Health Checks
-
-| | ALB | NLB | GWLB |
-|---|---|---|---|
-| HTTP/HTTPS | ✅ | ✅ | ✅ |
-| TCP | ✅ | ✅ | ✅ |
-| gRPC | ✅ | ❌ | ❌ |
-| Custom response codes | ✅ | ❌ | ❌ |
-
-### Key Numbers to Remember
-
-| Concept | Value |
-|---|---|
-| Deregistration Delay default | **300 seconds** |
-| Deregistration Delay range | **0 – 3600 seconds** |
-| ALB Idle Timeout default | **60 seconds** |
-| Slow Start Duration range | **0 – 900 seconds** |
-| Minimum subnet size | **/27 (8 free IPs)** |
-| Pre-signed URL max (SDK) | **7 days** *(S3, not ELB — don't confuse)* |
-| ALB access log delivery | **Every 5 minutes** |
-| Rule priority range | **1 – 50,000** |
-| Max rules per ALB | **100 rules per listener** |
-| Max target groups per ALB | **100** |
-| Max targets per target group | **1,000** |
-
-### Common Exam Traps
-
-```
-Trap 1: "ALB Cross-Zone can be disabled"
-  ❌ Wrong — ALB Cross-Zone is ALWAYS ON and cannot be disabled
-
-Trap 2: "NLB security groups block traffic"
-  ❌ Wrong — NLB has NO security groups. Use EC2 SGs and NACLs
-
-Trap 3: "Use ALB for PrivateLink"
-  ❌ Wrong — PrivateLink requires NLB as the backend
-
-Trap 4: "CLB supports path-based routing"
-  ❌ Wrong — CLB has NO content-based routing
-
-Trap 5: "NLB adds X-Forwarded-For header"
-  ❌ Wrong — NLB preserves client IP natively (no header needed)
-  ALB adds X-Forwarded-For because it terminates the connection
-
-Trap 6: "Sticky sessions guarantee even distribution"
-  ❌ Wrong — Stickiness can cause UNEVEN distribution
-
-Trap 7: "ELB health checks use the same port as traffic"
-  ⚠️  Default yes, but you can configure a different health check port
-  Common pattern: Traffic on 443, health check on 8080 /health
-
-Trap 8: "Deregistration Delay = Connection Draining"
-  ✅ Same concept, different names:
-     CLB = "Connection Draining"
-     ALB/NLB = "Deregistration Delay"
-```
-
----
-
-## 🗺️ Complete ELB Mental Model
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    ELB COMPLETE MENTAL MODEL                             │
-│                                                                         │
-│  LAYER 7 (HTTP/HTTPS)          LAYER 4 (TCP/UDP)      LAYER 3+4        │
-│  ┌─────────────────┐           ┌─────────────────┐   ┌──────────────┐  │
-│  │       ALB       │           │       NLB       │   │    GWLB      │  │
-│  │                 │           │                 │   │              │  │
-│  │ • Path routing  │           │ • Static IP     │   │ • Appliances │  │
-│  │ • Host routing  │           │ • UDP support   │   │ • GENEVE     │  │
-│  │ • gRPC/WS       │           │ • Ultra perf    │   │ • Inline     │  │
-│  │ • Lambda target │           │ • PrivateLink   │   │   inspect    │  │
-│  │ • Cognito auth  │           │ • Real client IP│   │              │  │
-│  │ • WAF           │           │ • TLS passthru  │   │              │  │
-│  │ • Cross-Zone ON │           │ • Cross-Zone OFF│   │ Cross-Zone   │  │
-│  │   (always free) │           │   (charged)     │   │ OFF(charged) │  │
-│  └─────────────────┘           └─────────────────┘   └──────────────┘  │
-│           │                             │                    │          │
-│           └─────────────────────────────┴────────────────────┘          │
-│                                         │                               │
-│                              ┌──────────▼──────────┐                   │
-│                              │    Target Groups     │                   │
-│                              │  instance | ip |     │                   │
-│                              │  lambda  | alb       │                   │
-│                              └──────────┬──────────┘                   │
-│                                         │                               │
-│                    ┌────────────────────┼────────────────────┐          │
-│                    ▼                    ▼                    ▼          │
-│               EC2 / ECS            Lambda               On-Prem        │
-│               Fargate / EKS        Functions            (via DX/VPN)   │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-<p align="center">
-  <img src="https://icon.icepanel.io/AWS/svg/Networking-Content-Delivery/Elastic-Load-Balancing.svg" width="60"/>
-  <br/>
-  <em>Amazon ELB — Distribute traffic intelligently. Build resilient, scalable, secure applications.</em>
-</p>
-
----
-
-### 📚 Series Navigation
-
-| Part | Topics Covered |
-|---|---|
-| **Part 1** | Architecture, ELB Types (CLB/ALB/NLB/GWLB), DNS→LB→Resources Flow, Listeners & Rules |
-| **Part 2** | Cross-Zone LB, Health Checks, Sticky Sessions, SSL/TLS & SNI, Connection Draining, Target Groups |
-| **Part 3** | Security, Monitoring, PrivateLink, Pricing, Advanced Patterns, Key Hacks & Exam Cheat Sheet |
-0:{"P":null,"c":["","blog"],"q":"","i":false,"f":[[["",{"children":["blog",{"children":["__PAGE__",{}]}]},"$undefined","$undefined",16],[["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Portfolio/_next/static/chunks/0ts6-jl8eivfa.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/37bwioucar902.js","async":true,"nonce":"$undefined"}],["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/14mrh2-p_w84d.js","async":true,"nonce":"$undefined"}]],["$","html",null,{"lang":"en","suppressHydrationWarning":true,"children":["$","body",null,{"className":"geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__variable antialiased","children":[["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}],["$","$L4",null,{}]]}]}]]}],{"children":[["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":[["$","$1","c",{"children":[["$","$L5",null,{"posts":[{"slug":"AWS-S3-Complete-Guide","title":"Amazon S3 — The Storage Layer Every Scalable Business Needs","date":"2025-07-01","excerpt":"Most businesses are hemorrhaging money on storage they don't control, can't scale, and can't secure. Here's how Amazon S3 solves every one of those problems — and why it's the backbone of modern cloud architecture.","tags":["AWS","S3","Cloud Storage","Architecture","DevOps"],"content":"$6"},{"slug":"why-i-moved-to-devops","title":"Why I Moved from Development to DevOps","date":"2025-06-15","excerpt":"My journey from writing frontend code to managing cloud infrastructure and CI/CD pipelines.","tags":["DevOps","Career","Cloud"],"content":"\n# Why I Moved from Development to DevOps\n\nAs a developer, I always found myself fascinated by the deployment side of things. How does my code actually reach users? What happens after I push to main?\n\n## The Turning Point\n\nWorking at Cyber Meteors, I realized that building great software is only half the battle. The other half is delivering it reliably, scaling it efficiently, and monitoring it continuously.\n\n## What I Learned\n\n- Infrastructure as Code changes everything\n- CI/CD pipelines save hundreds of hours\n- Cloud certifications open doors\n- The DevOps mindset is about collaboration\n\n## Where I Am Now\n\nToday, I architect cloud solutions on AWS and Azure, build automated pipelines, and containerize applications. The transition wasn't easy, but it was absolutely worth it.\n"},{"slug":"zero-downtime-deployments","title":"Setting Up Zero-Downtime Deployments with GitHub Actions","date":"2025-05-20","excerpt":"A practical guide to configuring CI/CD pipelines that deploy without any service interruption.","tags":["CI/CD","GitHub Actions","AWS"],"content":"\n# Setting Up Zero-Downtime Deployments with GitHub Actions\n\nZero-downtime deployment ensures your users never experience service interruption during updates. Here's how I set it up for a React application deployed on EC2.\n\n## The Pipeline\n\n1. **Linting** — Code quality checks\n2. **Testing** — Automated test suite\n3. **Coverage** — Reports via Codecov\n4. **Deploy** — Rolling update to EC2\n\n## Key Takeaways\n\n- Always have health checks in place\n- Use rolling deployments over blue-green for simpler setups\n- Monitor your deployment metrics\n- Rollback strategies are non-negotiable\n"},{"slug":"AWS-CloudFormation-Complete-Guide","title":"AWS-CloudFormation-Complete-Guide","date":"","excerpt":"AWS CloudFormation — Complete Guide for AWS Solutions Architect Associate  AWS CloudFormation is AWS's Infrastructure as Code (IaC) service that lets you model,...","tags":[],"content":"$7"},{"slug":"AWS-ELB-Complete-Guide-Part1","title":"AWS-ELB-Complete-Guide-Part1","date":"","excerpt":"Amazon ELB — Complete Guide for AWS Solutions Architect Associate Part 1 of 3 — Architecture, Types & Core Concepts  Elastic Load Balancing (ELB) is AWS's manag...","tags":[],"content":"$8"},{"slug":"AWS-ELB-Complete-Guide-Part2","title":"AWS-ELB-Complete-Guide-Part2","date":"","excerpt":"Amazon ELB — Complete Guide for AWS Solutions Architect Associate Part 2 of 3 — Cross-Zone LB, Health Checks, Sticky Sessions, SSL/TLS & Connection Draining ---...","tags":[],"content":"$9"},{"slug":"AWS-ELB-Complete-Guide-Part3","title":"AWS-ELB-Complete-Guide-Part3","date":"","excerpt":"Amazon ELB — Complete Guide for AWS Solutions Architect Associate Part 3 of 3 — Security, Monitoring, PrivateLink, Pricing & Exam Cheat Sheet --- 🔒 ELB Securit...","tags":[],"content":"$a"}]}],["$Lb","$Lc"],"$Ld"]}],{},null,false,null]},null,false,"$@e"]},null,false,null],"$Lf",false]],"m":"$undefined","G":["$10",["$L11"]],"S":true,"h":null,"s":"$undefined","l":"$undefined","p":"$undefined","d":"$undefined","b":"ub8qLouCN0cA2r5a5Z098"}
+0:{"P":null,"c":["","blog"],"q":"","i":false,"f":[[["",{"children":["blog",{"children":["__PAGE__",{}]}]},"$undefined","$undefined",16],[["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Portfolio/_next/static/chunks/0ts6-jl8eivfa.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/37bwioucar902.js","async":true,"nonce":"$undefined"}],["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/14mrh2-p_w84d.js","async":true,"nonce":"$undefined"}]],["$","html",null,{"lang":"en","suppressHydrationWarning":true,"children":["$","body",null,{"className":"geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__variable antialiased","children":[["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}],["$","$L4",null,{}]]}]}]]}],{"children":[["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":[["$","$1","c",{"children":[["$","$L5",null,{"posts":[{"slug":"AWS-S3-Complete-Guide","title":"Amazon S3 — The Storage Layer Every Scalable Business Needs","date":"2025-07-01","excerpt":"Most businesses are hemorrhaging money on storage they don't control, can't scale, and can't secure. Here's how Amazon S3 solves every one of those problems — and why it's the backbone of modern cloud architecture.","tags":["AWS","S3","Cloud Storage","Architecture","DevOps"],"content":"$6","readTime":12},{"slug":"why-i-moved-to-devops","title":"Why I Moved from Development to DevOps","date":"2025-06-15","excerpt":"My journey from writing frontend code to managing cloud infrastructure and CI/CD pipelines.","tags":["DevOps","Career","Cloud"],"content":"\n# Why I Moved from Development to DevOps\n\nAs a developer, I always found myself fascinated by the deployment side of things. How does my code actually reach users? What happens after I push to main?\n\n## The Turning Point\n\nWorking at Cyber Meteors, I realized that building great software is only half the battle. The other half is delivering it reliably, scaling it efficiently, and monitoring it continuously.\n\n## What I Learned\n\n- Infrastructure as Code changes everything\n- CI/CD pipelines save hundreds of hours\n- Cloud certifications open doors\n- The DevOps mindset is about collaboration\n\n## Where I Am Now\n\nToday, I architect cloud solutions on AWS and Azure, build automated pipelines, and containerize applications. The transition wasn't easy, but it was absolutely worth it.\n","readTime":1},{"slug":"zero-downtime-deployments","title":"Setting Up Zero-Downtime Deployments with GitHub Actions","date":"2025-05-20","excerpt":"A practical guide to configuring CI/CD pipelines that deploy without any service interruption.","tags":["CI/CD","GitHub Actions","AWS"],"content":"\n# Setting Up Zero-Downtime Deployments with GitHub Actions\n\nZero-downtime deployment ensures your users never experience service interruption during updates. Here's how I set it up for a React application deployed on EC2.\n\n## The Pipeline\n\n1. **Linting** — Code quality checks\n2. **Testing** — Automated test suite\n3. **Coverage** — Reports via Codecov\n4. **Deploy** — Rolling update to EC2\n\n## Key Takeaways\n\n- Always have health checks in place\n- Use rolling deployments over blue-green for simpler setups\n- Monitor your deployment metrics\n- Rollback strategies are non-negotiable\n","readTime":1},{"slug":"AWS-ELB-Complete-Guide-Part3","title":"Amazon ELB — Complete Guide (Part 3): Security, Monitoring, PrivateLink & Exam Cheat Sheet","date":"2025-05-10","excerpt":"Part 3 of the ELB series covers security groups, WAF, PrivateLink, CloudWatch metrics, access logs, pricing, advanced architectural patterns, and a complete exam cheat sheet.","tags":["AWS","ELB","Security","Networking","Architecture"],"content":"$7","readTime":16},{"slug":"AWS-ELB-Complete-Guide-Part2","title":"Amazon ELB — Complete Guide (Part 2): Cross-Zone LB, Health Checks, Sticky Sessions & SSL/TLS","date":"2025-05-01","excerpt":"Part 2 of the ELB series covers cross-zone load balancing, health check configuration, sticky sessions, SSL/TLS termination with SNI, and connection draining.","tags":["AWS","ELB","Networking","SSL","DevOps"],"content":"$8","readTime":12},{"slug":"AWS-ELB-Complete-Guide-Part1","title":"Amazon ELB — Complete Guide (Part 1): Architecture, Types & Core Concepts","date":"2025-04-20","excerpt":"A deep dive into AWS Elastic Load Balancing — covering ALB, NLB, GWLB, and CLB architecture, DNS flow, listener rules, and when to use each type.","tags":["AWS","ELB","Architecture","Networking","DevOps"],"content":"$9","readTime":14},{"slug":"AWS-CloudFormation-Complete-Guide","title":"AWS CloudFormation — Complete Guide for AWS Solutions Architect Associate","date":"2025-04-10","excerpt":"A complete guide to AWS CloudFormation covering templates, stacks, change sets, drift detection, and best practices for infrastructure as code.","tags":["AWS","CloudFormation","IaC","DevOps","Architecture"],"content":"$a","readTime":16}]}],["$Lb","$Lc"],"$Ld"]}],{},null,false,null]},null,false,"$@e"]},null,false,null],"$Lf",false]],"m":"$undefined","G":["$10",["$L11"]],"S":true,"h":null,"s":"$undefined","l":"$undefined","p":"$undefined","d":"$undefined","b":"oTkhDdTSvJB9ubf7q84cT"}
 12:I[97367,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"OutletBoundary"]
 13:"$Sreact.suspense"
 16:I[97367,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"ViewportBoundary"]
 18:I[97367,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"MetadataBoundary"]
-b:["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/1vp4o988nnn9s.js","async":true,"nonce":"$undefined"}]
+b:["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/40m24h6w96dbs.js","async":true,"nonce":"$undefined"}]
 c:["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/2fjmpru07ey8_.js","async":true,"nonce":"$undefined"}]
 d:["$","$L12",null,{"children":["$","$13",null,{"name":"Next.MetadataOutlet","children":"$@14"}]}]
 15:[]
