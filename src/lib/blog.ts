@@ -34,11 +34,14 @@ export function getAllPosts(): BlogPost[] {
         .replace(/[*_`>|]/g, "")
         .replace(/\n+/g, " ")
         .trim();
+      const filePath = path.join(blogsDir, file);
+      const mtime = fs.statSync(filePath).mtime;
+      const fallbackDate = mtime.toISOString().split("T")[0];
       const wordCount = content.trim().split(/\s+/).length;
       return {
         slug,
         title: data.title || slug,
-        date: data.date || "",
+        date: data.date || fallbackDate,
         excerpt: data.excerpt || plainExcerpt.slice(0, 160) + "...",
         tags: data.tags || [],
         content,
@@ -53,12 +56,14 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   if (!fs.existsSync(filePath)) return null;
   const raw = fs.readFileSync(filePath, "utf-8");
   const { data, content } = matter(raw);
+  const mtime = fs.statSync(filePath).mtime;
+  const fallbackDate = mtime.toISOString().split("T")[0];
   const processed = await remark().use(remarkGfm).use(html, { sanitize: false }).process(content);
   const wordCount = content.trim().split(/\s+/).length;
   return {
     slug,
     title: data.title || slug,
-    date: data.date || "",
+    date: data.date || fallbackDate,
     excerpt: data.excerpt || "",
     tags: data.tags || [],
     content: processed.toString(),
