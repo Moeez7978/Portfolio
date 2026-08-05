@@ -1,0 +1,1096 @@
+1:"$Sreact.fragment"
+2:I[90011,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js","/Portfolio/_next/static/chunks/1mwkoqsph5j67.js","/Portfolio/_next/static/chunks/2fjmpru07ey8_.js"],"default"]
+7:I[97367,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"OutletBoundary"]
+8:"$Sreact.suspense"
+3:T8a9f,<h1><img src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" width="40" align="center"/> AWS CloudFormation — Complete Guide for AWS Solutions Architect Associate</h1>
+<blockquote>
+<p><strong>AWS CloudFormation</strong> is AWS's Infrastructure as Code (IaC) service that lets you model, provision, and manage AWS and third-party resources by treating infrastructure as code — declaratively, repeatably, and safely.</p>
+</blockquote>
+<hr>
+<h2>📐 Architecture &#x26; Infrastructure</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/Physical-and-Logical-Resources-1.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/Physical-and-Logical-Resources-2.png" width="750"/>
+</p>
+<h3>How CloudFormation Works — The Big Picture</h3>
+<pre><code>Developer writes Template (JSON/YAML)
+          │
+          ▼
+   CloudFormation Service
+          │
+    ┌─────┴──────┐
+    │  Template   │  ← Parsed, validated, dependency-resolved
+    │  Engine     │
+    └─────┬──────┘
+          │
+    ┌─────▼──────────────────────────────────┐
+    │              Stack                      │
+    │  (Logical grouping of AWS resources)    │
+    └─────┬──────────────────────────────────┘
+          │
+    ┌─────▼──────────────────────────────────┐
+    │         Provisioned Resources           │
+    │  EC2 | S3 | RDS | VPC | IAM | Lambda   │
+    └────────────────────────────────────────┘
+</code></pre>
+<p>CloudFormation reads your template, builds a dependency graph, and provisions resources in the correct order — automatically handling creation, updates, and deletion as a single atomic unit.</p>
+<h3>Core Concepts</h3>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Template</strong></td>
+<td>JSON or YAML file describing the desired infrastructure state.</td>
+</tr>
+<tr>
+<td><strong>Stack</strong></td>
+<td>A deployed instance of a template. All resources in a stack are managed together.</td>
+</tr>
+<tr>
+<td><strong>Change Set</strong></td>
+<td>A preview of proposed changes before applying an update to a stack.</td>
+</tr>
+<tr>
+<td><strong>Stack Set</strong></td>
+<td>Deploy stacks across multiple AWS accounts and regions from a single operation.</td>
+</tr>
+<tr>
+<td><strong>Drift</strong></td>
+<td>When a resource's actual configuration differs from what CloudFormation expects.</td>
+</tr>
+<tr>
+<td><strong>Nested Stack</strong></td>
+<td>A stack created as a resource within another (parent) stack.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>🧱 Template Anatomy</h2>
+<p>A CloudFormation template has up to 10 sections. Only <code>Resources</code> is mandatory.</p>
+<pre><code class="language-yaml">AWSTemplateFormatVersion: "2010-09-09"   # Optional — always this value if used
+
+Description: "My CloudFormation Template"  # Optional — string description
+
+Metadata:                                  # Optional — additional info for tools/console
+  AWS::CloudFormation::Interface:
+    ParameterGroups: [...]
+
+Parameters:                                # Optional — dynamic inputs at deploy time
+  EnvironmentType:
+    Type: String
+    AllowedValues: [dev, staging, prod]
+    Default: dev
+
+Mappings:                                  # Optional — static lookup tables
+  RegionAMIMap:
+    us-east-1:
+      AMI: ami-0abcdef1234567890
+
+Conditions:                                # Optional — conditional resource creation
+  IsProd: !Equals [!Ref EnvironmentType, prod]
+
+Transform:                                 # Optional — macros (e.g., SAM transform)
+  - AWS::Serverless-2016-10-31
+
+Resources:                                 # REQUIRED — the actual AWS resources
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: my-app-bucket
+
+Outputs:                                   # Optional — values to export or display
+  BucketName:
+    Value: !Ref MyBucket
+    Export:
+      Name: MyAppBucketName
+</code></pre>
+<h3>Template Sections Breakdown</h3>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Required</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>AWSTemplateFormatVersion</strong></td>
+<td>No</td>
+<td>Template version identifier</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>No</td>
+<td>Human-readable description</td>
+</tr>
+<tr>
+<td><strong>Metadata</strong></td>
+<td>No</td>
+<td>Console UI hints, parameter grouping</td>
+</tr>
+<tr>
+<td><strong>Parameters</strong></td>
+<td>No</td>
+<td>Runtime inputs — make templates reusable</td>
+</tr>
+<tr>
+<td><strong>Mappings</strong></td>
+<td>No</td>
+<td>Static key-value lookup tables</td>
+</tr>
+<tr>
+<td><strong>Conditions</strong></td>
+<td>No</td>
+<td>Conditionally create/configure resources</td>
+</tr>
+<tr>
+<td><strong>Transform</strong></td>
+<td>No</td>
+<td>Apply macros (SAM, custom macros)</td>
+</tr>
+<tr>
+<td><strong>Resources</strong></td>
+<td>✅ Yes</td>
+<td>Define AWS resources — the core of every template</td>
+</tr>
+<tr>
+<td><strong>Outputs</strong></td>
+<td>No</td>
+<td>Export values for cross-stack references or display</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>⚙️ How CloudFormation Operates</h2>
+<h3>Stack Lifecycle</h3>
+<pre><code>Template Submitted
+       │
+       ▼
+  REVIEW_IN_PROGRESS
+       │
+       ▼
+  CREATE_IN_PROGRESS  ──► CREATE_FAILED ──► ROLLBACK_IN_PROGRESS ──► ROLLBACK_COMPLETE
+       │
+       ▼
+  CREATE_COMPLETE
+       │
+       ▼
+  UPDATE_IN_PROGRESS  ──► UPDATE_FAILED ──► UPDATE_ROLLBACK_IN_PROGRESS
+       │
+       ▼
+  UPDATE_COMPLETE
+       │
+       ▼
+  DELETE_IN_PROGRESS  ──► DELETE_FAILED
+       │
+       ▼
+  DELETE_COMPLETE
+</code></pre>
+<h3>Resource Provisioning Order</h3>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationDependsOn.png" width="750"/>
+</p>
+<p>CloudFormation builds an internal dependency graph using <code>DependsOn</code> and intrinsic function references (<code>!Ref</code>, <code>!GetAtt</code>). Resources with no dependencies are provisioned in parallel; dependent resources wait.</p>
+<pre><code class="language-yaml">Resources:
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+
+  MySubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC          # ← CloudFormation knows Subnet depends on VPC
+      CidrBlock: 10.0.1.0/24
+</code></pre>
+<h3>Rollback Behavior</h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Default Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stack creation fails</td>
+<td>Entire stack rolls back and all resources are deleted</td>
+</tr>
+<tr>
+<td>Stack update fails</td>
+<td>Rolls back to the last known good state</td>
+</tr>
+<tr>
+<td>Rollback itself fails</td>
+<td>Stack enters <code>UPDATE_ROLLBACK_FAILED</code> — requires manual intervention</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>Tip:</strong> You can disable rollback on creation failure (useful for debugging) using <code>--disable-rollback</code> in the CLI.</p>
+</blockquote>
+<hr>
+<h2>🔧 Parameters</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/TemplateParameters-1.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/PseudoParameters-1.png" width="750"/>
+</p>
+<p>Parameters make templates reusable across environments.</p>
+<pre><code class="language-yaml">Parameters:
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.medium
+    Description: EC2 instance type
+
+  DBPassword:
+    Type: String
+    NoEcho: true          # ← Masks value in console and CLI output
+    MinLength: 8
+</code></pre>
+<h3>Parameter Types</h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>String</code></td>
+<td>Plain text value</td>
+</tr>
+<tr>
+<td><code>Number</code></td>
+<td>Integer or float</td>
+</tr>
+<tr>
+<td><code>List&#x3C;Number></code></td>
+<td>Comma-separated list of numbers</td>
+</tr>
+<tr>
+<td><code>CommaDelimitedList</code></td>
+<td>Comma-separated list of strings</td>
+</tr>
+<tr>
+<td><code>AWS::EC2::KeyPair::KeyName</code></td>
+<td>Validates key pair exists in the account</td>
+</tr>
+<tr>
+<td><code>AWS::EC2::VPC::Id</code></td>
+<td>Validates VPC ID exists</td>
+</tr>
+<tr>
+<td><code>AWS::SSM::Parameter::Value&#x3C;String></code></td>
+<td>Pulls value from SSM Parameter Store at deploy time</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> Use <code>NoEcho: true</code> for sensitive parameters like passwords. The value is never shown in the console, CLI, or CloudFormation events.</p>
+</blockquote>
+<hr>
+<h2>🗺️ Mappings</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationMappings.png" width="750"/>
+</p>
+<p>Mappings are static lookup tables — great for region-to-AMI or environment-to-size mappings.</p>
+<pre><code class="language-yaml">Mappings:
+  EnvironmentConfig:
+    prod:
+      InstanceType: t3.large
+      MultiAZ: true
+    dev:
+      InstanceType: t3.micro
+      MultiAZ: false
+
+Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !FindInMap [EnvironmentConfig, !Ref EnvironmentType, InstanceType]
+</code></pre>
+<hr>
+<h2>🔀 Conditions</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationConditions.png" width="750"/>
+</p>
+<p>Conditions allow you to create resources or set property values based on logic.</p>
+<pre><code class="language-yaml">Conditions:
+  IsProd: !Equals [!Ref EnvironmentType, prod]
+  IsNotProd: !Not [!Condition IsProd]
+
+Resources:
+  ProdOnlyBucket:
+    Type: AWS::S3::Bucket
+    Condition: IsProd          # ← Only created in prod
+
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !If [IsProd, t3.large, t3.micro]   # ← Conditional value
+</code></pre>
+<h3>Condition Functions</h3>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>!Equals</code></td>
+<td>True if two values are equal</td>
+</tr>
+<tr>
+<td><code>!Not</code></td>
+<td>Inverts a condition</td>
+</tr>
+<tr>
+<td><code>!And</code></td>
+<td>True if all conditions are true</td>
+</tr>
+<tr>
+<td><code>!Or</code></td>
+<td>True if any condition is true</td>
+</tr>
+<tr>
+<td><code>!If</code></td>
+<td>Returns one of two values based on a condition</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>🔗 Intrinsic Functions</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/IntrinsicFunctions-1.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/IntrinsicFunctions-2.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/IntrinsicFunctions-3.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/IntrinsicFunctions-4.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/IntrinsicFunctions-5.png" width="750"/>
+</p>
+<p>Intrinsic functions are built-in helpers used within templates.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Purpose</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>!Ref</code></td>
+<td>Reference a parameter or resource's primary ID</td>
+<td><code>!Ref MyBucket</code></td>
+</tr>
+<tr>
+<td><code>!GetAtt</code></td>
+<td>Get an attribute of a resource</td>
+<td><code>!GetAtt MyBucket.Arn</code></td>
+</tr>
+<tr>
+<td><code>!Sub</code></td>
+<td>String substitution</td>
+<td><code>!Sub "arn:aws:s3:::${BucketName}/*"</code></td>
+</tr>
+<tr>
+<td><code>!Join</code></td>
+<td>Join values with a delimiter</td>
+<td><code>!Join [":", [a, b, c]]</code> → <code>a:b:c</code></td>
+</tr>
+<tr>
+<td><code>!Split</code></td>
+<td>Split a string into a list</td>
+<td><code>!Split [",", "a,b,c"]</code></td>
+</tr>
+<tr>
+<td><code>!Select</code></td>
+<td>Select item from a list by index</td>
+<td><code>!Select [0, !Split [",", "a,b"]]</code></td>
+</tr>
+<tr>
+<td><code>!FindInMap</code></td>
+<td>Look up a value in Mappings</td>
+<td><code>!FindInMap [MapName, Key1, Key2]</code></td>
+</tr>
+<tr>
+<td><code>!ImportValue</code></td>
+<td>Import an exported output from another stack</td>
+<td><code>!ImportValue SharedVPCId</code></td>
+</tr>
+<tr>
+<td><code>!Base64</code></td>
+<td>Encode a string to Base64 (used in UserData)</td>
+<td><code>!Base64 "#!/bin/bash\nyum update -y"</code></td>
+</tr>
+<tr>
+<td><code>!Cidr</code></td>
+<td>Generate CIDR blocks</td>
+<td><code>!Cidr [10.0.0.0/16, 4, 8]</code></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>📤 Outputs &#x26; Cross-Stack References</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationOutputs.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationCrossStackReferences-1.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationCrossStackReferences-2.png" width="750"/>
+</p>
+<p>Outputs expose values from a stack that can be consumed by other stacks or displayed in the console.</p>
+<pre><code class="language-yaml">Outputs:
+  VPCId:
+    Description: "The VPC ID"
+    Value: !Ref MyVPC
+    Export:
+      Name: !Sub "${AWS::StackName}-VPCId"   # ← Must be unique per region/account
+</code></pre>
+<p>Consuming stack:</p>
+<pre><code class="language-yaml">Resources:
+  MySubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue "NetworkStack-VPCId"
+</code></pre>
+<blockquote>
+<p>⚠️ <strong>Important:</strong> You cannot delete a stack that has exported outputs being consumed by another stack. Delete the consuming stack first.</p>
+</blockquote>
+<hr>
+<h2>🏗️ Nested Stacks</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationNestedStacks-1.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationNestedStacks-2.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationNestedStacks-3.png" width="750"/>
+</p>
+<p>Nested stacks allow you to break large templates into reusable modules.</p>
+<pre><code>Root Stack (Master)
+    ├── Network Stack (VPC, Subnets, IGW)
+    ├── Security Stack (IAM Roles, Security Groups)
+    └── Application Stack (EC2, RDS, ALB)
+</code></pre>
+<pre><code class="language-yaml">Resources:
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.amazonaws.com/my-bucket/network.yaml
+      Parameters:
+        VPCCidr: 10.0.0.0/16
+</code></pre>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> Nested stacks are best for reusable components. Cross-stack references (Outputs + ImportValue) are best for sharing values between independently managed stacks.</p>
+</blockquote>
+<hr>
+<h2>📦 Stack Sets</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationStackSets.png" width="750"/>
+</p>
+<p>Deploy the same stack across multiple AWS accounts and regions from a single operation.</p>
+<pre><code>Management Account
+        │
+        ▼
+   StackSet Definition
+        │
+   ┌────┴────────────────────────────────┐
+   │                                     │
+   ▼                                     ▼
+Account A (us-east-1)           Account B (eu-west-1)
+Stack Instance                  Stack Instance
+</code></pre>
+<h3>Permission Models</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Self-managed</strong></td>
+<td>You create IAM roles in each target account manually</td>
+</tr>
+<tr>
+<td><strong>Service-managed</strong></td>
+<td>Uses AWS Organizations — automatic role creation, deploy to entire OUs</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> Service-managed StackSets with AWS Organizations can automatically deploy to new accounts added to an OU.</p>
+</blockquote>
+<hr>
+<h2>🔍 Change Sets</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationChangeSets.png" width="750"/>
+</p>
+<p>Change Sets let you preview what will happen before executing a stack update — no surprises.</p>
+<pre><code>Current Stack State  +  New Template  →  Change Set (Preview)  →  Execute
+</code></pre>
+<pre><code class="language-bash"># Create a change set
+aws cloudformation create-change-set \
+  --stack-name my-stack \
+  --template-body file://updated-template.yaml \
+  --change-set-name my-changes
+
+# Review the change set
+aws cloudformation describe-change-set \
+  --stack-name my-stack \
+  --change-set-name my-changes
+
+# Execute if satisfied
+aws cloudformation execute-change-set \
+  --stack-name my-stack \
+  --change-set-name my-changes
+</code></pre>
+<h3>Change Set Actions</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Add</strong></td>
+<td>New resource will be created</td>
+</tr>
+<tr>
+<td><strong>Modify</strong></td>
+<td>Existing resource will be updated</td>
+</tr>
+<tr>
+<td><strong>Remove</strong></td>
+<td>Existing resource will be deleted</td>
+</tr>
+</tbody>
+</table>
+<h3>Replacement Column</h3>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>True</strong></td>
+<td>Resource will be deleted and recreated (causes downtime)</td>
+</tr>
+<tr>
+<td><strong>False</strong></td>
+<td>Resource will be updated in-place</td>
+</tr>
+<tr>
+<td><strong>Conditional</strong></td>
+<td>Depends on the actual property values at execution time</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>🛡️ Stack Policies</h2>
+<p>Stack policies protect critical resources from unintentional updates or replacements during stack updates.</p>
+<pre><code class="language-json">{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "Update:*",
+      "Principal": "*",
+      "Resource": "*"
+    },
+    {
+      "Effect": "Deny",
+      "Action": ["Update:Replace", "Update:Delete"],
+      "Principal": "*",
+      "Resource": "LogicalResourceId/ProductionDatabase"
+    }
+  ]
+}
+</code></pre>
+<blockquote>
+<p>⚠️ Once a stack policy is set, it cannot be deleted — only updated. All resources are protected by default if a policy exists with no explicit Allow.</p>
+</blockquote>
+<hr>
+<h2>🔄 Drift Detection</h2>
+<p>Drift occurs when someone manually changes a resource outside of CloudFormation.</p>
+<pre><code>CloudFormation Expected State  ≠  Actual Resource State  →  DRIFTED
+</code></pre>
+<pre><code class="language-bash"># Detect drift on a stack
+aws cloudformation detect-stack-drift --stack-name my-stack
+
+# Check drift results
+aws cloudformation describe-stack-resource-drifts \
+  --stack-name my-stack \
+  --stack-resource-drift-status-filters MODIFIED DELETED
+</code></pre>
+<h3>Drift Status Values</h3>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>IN_SYNC</strong></td>
+<td>Resource matches the template</td>
+</tr>
+<tr>
+<td><strong>MODIFIED</strong></td>
+<td>Resource exists but properties differ</td>
+</tr>
+<tr>
+<td><strong>DELETED</strong></td>
+<td>Resource was deleted outside CloudFormation</td>
+</tr>
+<tr>
+<td><strong>NOT_CHECKED</strong></td>
+<td>Drift detection not supported for this resource type</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>🧩 Custom Resources</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationCustomResources.png" width="750"/>
+</p>
+<p>Custom Resources let you extend CloudFormation to manage resources it doesn't natively support — or run arbitrary logic during stack operations.</p>
+<pre><code>CloudFormation Stack
+        │
+        │  Create/Update/Delete event
+        ▼
+  Lambda Function / SNS Topic
+        │
+        │  Performs custom logic
+        ▼
+  Sends response back to CloudFormation
+  (Success or Failure + Data)
+</code></pre>
+<pre><code class="language-yaml">Resources:
+  MyCustomResource:
+    Type: Custom::MyLogic
+    Properties:
+      ServiceToken: !GetAtt MyLambdaFunction.Arn
+      SomeInput: "value"
+</code></pre>
+<h3>Use Cases</h3>
+<ul>
+<li>Provision third-party resources (e.g., Datadog monitors, GitHub repos)</li>
+<li>Run pre/post deployment scripts</li>
+<li>Populate DynamoDB tables with seed data</li>
+<li>Validate configurations before stack proceeds</li>
+</ul>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> Custom Resources must send a response back to a pre-signed S3 URL provided by CloudFormation. If the Lambda times out without responding, the stack will hang until the 1-hour timeout.</p>
+</blockquote>
+<hr>
+<h2>🔐 Security &#x26; IAM</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationStackRoles.png" width="750"/>
+</p>
+<h3>Execution Roles</h3>
+<p>CloudFormation needs permissions to create resources on your behalf.</p>
+<pre><code>You (User/Role)
+      │
+      │  Submit template
+      ▼
+CloudFormation Service
+      │
+      │  Uses Service Role (if specified) OR your credentials
+      ▼
+  Creates AWS Resources
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>No service role</strong></td>
+<td>CloudFormation uses the permissions of the user/role that initiated the operation</td>
+</tr>
+<tr>
+<td><strong>Service role</strong></td>
+<td>CloudFormation assumes a dedicated IAM role — least privilege, auditable</td>
+</tr>
+</tbody>
+</table>
+<h3>Service Role Example</h3>
+<pre><code class="language-yaml"># IAM Role for CloudFormation
+Type: AWS::IAM::Role
+Properties:
+  AssumeRolePolicyDocument:
+    Statement:
+      - Effect: Allow
+        Principal:
+          Service: cloudformation.amazonaws.com
+        Action: sts:AssumeRole
+</code></pre>
+<blockquote>
+<p>💡 <strong>Best Practice:</strong> Always use a dedicated CloudFormation service role with least-privilege permissions. This prevents privilege escalation — a user with limited permissions can't use CloudFormation to create resources they couldn't create directly.</p>
+</blockquote>
+<hr>
+<h2>🚀 Deployment Methods</h2>
+<h3>AWS Console</h3>
+<ul>
+<li>Upload template directly or reference an S3 URL</li>
+<li>Guided wizard for parameters, tags, and options</li>
+<li>Visual stack designer available</li>
+</ul>
+<h3>AWS CLI</h3>
+<pre><code class="language-bash"># Create a stack
+aws cloudformation create-stack \
+  --stack-name my-stack \
+  --template-body file://template.yaml \
+  --parameters ParameterKey=Env,ParameterValue=prod \
+  --capabilities CAPABILITY_IAM
+
+# Update a stack
+aws cloudformation update-stack \
+  --stack-name my-stack \
+  --template-body file://template.yaml
+
+# Delete a stack
+aws cloudformation delete-stack --stack-name my-stack
+
+# Wait for completion
+aws cloudformation wait stack-create-complete --stack-name my-stack
+</code></pre>
+<h3>Capabilities Flag</h3>
+<p>Some templates require explicit acknowledgment before CloudFormation will proceed:</p>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>When Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CAPABILITY_IAM</code></td>
+<td>Template creates IAM resources (roles, policies, groups)</td>
+</tr>
+<tr>
+<td><code>CAPABILITY_NAMED_IAM</code></td>
+<td>Template creates IAM resources with custom names</td>
+</tr>
+<tr>
+<td><code>CAPABILITY_AUTO_EXPAND</code></td>
+<td>Template uses macros or nested stacks with transforms</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>🔁 CloudFormation &#x26; CI/CD</h2>
+<p>CloudFormation integrates natively with AWS developer tools for automated deployments.</p>
+<pre><code>CodeCommit (Source)
+      │
+      ▼
+CodePipeline
+      │
+      ├──► CodeBuild (Lint/Validate template)
+      │
+      └──► CloudFormation Deploy Action
+                  │
+                  ├── Create/Update Stack
+                  └── Execute Change Set
+</code></pre>
+<h3>Template Validation</h3>
+<pre><code class="language-bash"># Validate template syntax before deploying
+aws cloudformation validate-template --template-body file://template.yaml
+</code></pre>
+<h3>cfn-lint (Community Tool)</h3>
+<pre><code class="language-bash"># Install
+pip install cfn-lint
+
+# Run linter
+cfn-lint template.yaml
+</code></pre>
+<hr>
+<h2>📊 Limits &#x26; Quotas</h2>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Default Limit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stacks per region per account</td>
+<td>2,000</td>
+</tr>
+<tr>
+<td>Template body size (direct upload)</td>
+<td>51,200 bytes</td>
+</tr>
+<tr>
+<td>Template body size (S3 URL)</td>
+<td>1 MB</td>
+</tr>
+<tr>
+<td>Parameters per template</td>
+<td>200</td>
+</tr>
+<tr>
+<td>Outputs per template</td>
+<td>200</td>
+</tr>
+<tr>
+<td>Resources per template</td>
+<td>500</td>
+</tr>
+<tr>
+<td>Mappings per template</td>
+<td>200</td>
+</tr>
+<tr>
+<td>StackSets per administrator account</td>
+<td>100</td>
+</tr>
+<tr>
+<td>Stack instances per StackSet</td>
+<td>2,000</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> If your template exceeds 51,200 bytes, you must upload it to S3 first and reference it via a URL. The S3 URL limit is 1 MB.</p>
+</blockquote>
+<hr>
+<h2>🧰 Additional Features</h2>
+<h3>cfn-init &#x26; cfn-signal (EC2 Bootstrap)</h3>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationInit-and-Cfninit.png" width="750"/>
+</p>
+<p>CloudFormation helper scripts allow EC2 instances to configure themselves and signal back when ready.</p>
+<pre><code class="language-yaml">Resources:
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            yum:
+              httpd: []
+          services:
+            sysvinit:
+              httpd:
+                enabled: true
+                ensureRunning: true
+    Properties:
+      UserData:
+        !Base64 |
+          #!/bin/bash
+          /opt/aws/bin/cfn-init -s !Ref AWS::StackId -r MyInstance --region !Ref AWS::Region
+          /opt/aws/bin/cfn-signal -e $? --stack !Ref AWS::StackName --resource MyInstance --region !Ref AWS::Region
+</code></pre>
+<h3>CreationPolicy &#x26; WaitCondition</h3>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationCreationPolicy.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationWaitConditions.png" width="750"/>
+</p>
+<p>Pause stack creation until a resource signals success.</p>
+<pre><code class="language-yaml">MyInstance:
+  Type: AWS::EC2::Instance
+  CreationPolicy:
+    ResourceSignal:
+      Count: 1
+      Timeout: PT15M    # Wait up to 15 minutes for signal
+</code></pre>
+<h3>DeletionPolicy</h3>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationDeletionPolicy.png" width="750"/>
+</p>
+<p>Control what happens to a resource when its stack is deleted.</p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Delete</code></td>
+<td>Default — resource is deleted with the stack</td>
+</tr>
+<tr>
+<td><code>Retain</code></td>
+<td>Resource is kept after stack deletion</td>
+</tr>
+<tr>
+<td><code>Snapshot</code></td>
+<td>Takes a snapshot before deletion (RDS, EBS, ElastiCache)</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-yaml">MyDatabase:
+  Type: AWS::RDS::DBInstance
+  DeletionPolicy: Snapshot    # ← Snapshot before delete
+</code></pre>
+<h3>UpdateReplacePolicy</h3>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/2100-IAC_CLOUDFORMATION/00_LEARNINGAIDS/CloudFormationCfnHUP.png" width="750"/>
+</p>
+<p>Controls what happens to the old resource when it must be replaced during an update.</p>
+<pre><code class="language-yaml">MyDatabase:
+  Type: AWS::RDS::DBInstance
+  UpdateReplacePolicy: Snapshot
+  DeletionPolicy: Retain
+</code></pre>
+<hr>
+<h2>📋 Quick Reference — Exam Tips</h2>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>Key Point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Only required section</td>
+<td><code>Resources</code> — all other sections are optional</td>
+</tr>
+<tr>
+<td>Template size limit</td>
+<td>51,200 bytes direct upload; <strong>1 MB via S3 URL</strong></td>
+</tr>
+<tr>
+<td>Rollback on failure</td>
+<td>Default behavior — can be disabled with <code>--disable-rollback</code></td>
+</tr>
+<tr>
+<td>Change Sets</td>
+<td>Preview changes before applying — no automatic execution</td>
+</tr>
+<tr>
+<td>Stack Policy</td>
+<td>Protects resources from update/delete — cannot be removed once set</td>
+</tr>
+<tr>
+<td>DeletionPolicy Snapshot</td>
+<td>Supported for <strong>RDS, EBS, ElastiCache</strong> — not all resource types</td>
+</tr>
+<tr>
+<td>Cross-stack reference</td>
+<td>Use <code>Outputs</code> + <code>Export</code> + <code>!ImportValue</code> — consuming stack blocks deletion</td>
+</tr>
+<tr>
+<td>Nested vs Cross-stack</td>
+<td>Nested = reusable modules; Cross-stack = independently managed stacks sharing values</td>
+</tr>
+<tr>
+<td>Custom Resource timeout</td>
+<td>Lambda must respond within <strong>1 hour</strong> or stack hangs</td>
+</tr>
+<tr>
+<td>StackSets + Organizations</td>
+<td>Service-managed model auto-deploys to new accounts in an OU</td>
+</tr>
+<tr>
+<td>CAPABILITY_IAM</td>
+<td>Required whenever template creates <strong>any IAM resource</strong></td>
+</tr>
+<tr>
+<td>cfn-signal</td>
+<td>Used with <code>CreationPolicy</code> to pause stack until EC2 is fully configured</td>
+</tr>
+<tr>
+<td>Drift Detection</td>
+<td>Identifies manual changes — does <strong>not</strong> auto-remediate</td>
+</tr>
+<tr>
+<td><code>!Ref</code> on a resource</td>
+<td>Returns the resource's <strong>primary identifier</strong> (e.g., bucket name, instance ID)</td>
+</tr>
+<tr>
+<td><code>!GetAtt</code></td>
+<td>Returns a <strong>specific attribute</strong> (e.g., ARN, DNS name)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>🏆 Golden Keypoints — Lessons from Production</h2>
+<p>These are the kinds of lessons that don't usually appear in certification exams but make a huge difference when designing and operating production-grade cloud solutions.</p>
+<hr>
+<h3>🔹 CloudFormation can't be used with S3 presigned URLs as Template URLs</h3>
+<p>CloudFormation needs to continuously access the template during stack operations — not just at the moment of submission. Temporary presigned URLs expire and can become inaccessible mid-operation, causing stack failures that are difficult to diagnose. Always use a <strong>permanent, publicly accessible S3 URL</strong> or a bucket policy that grants CloudFormation access to the object.</p>
+<pre><code>❌ https://s3.amazonaws.com/bucket/template.yaml?X-Amz-Expires=3600&#x26;X-Amz-Signature=...
+✅ https://s3.amazonaws.com/bucket/template.yaml  (with appropriate bucket/IAM policy)
+</code></pre>
+<hr>
+<h3>🔹 CloudFormation can't create tags for resources it doesn't own</h3>
+<p>CloudFormation can only manage the lifecycle of resources that are part of its own stack. If a resource was created outside of CloudFormation (manually, via CLI, or by another tool), CloudFormation has no authority to tag or modify it — even if you reference it in a template. For tagging external resources, use:</p>
+<ul>
+<li><strong>Custom Resources</strong> backed by Lambda to apply tags programmatically</li>
+<li><strong>AWS Config + Automation</strong> to enforce tagging compliance</li>
+<li><strong>Tag Editor</strong> in the AWS Console for one-time bulk tagging</li>
+<li><strong>Automation scripts</strong> (CLI/SDK) as part of your deployment pipeline</li>
+</ul>
+<pre><code>✅ Resources CloudFormation created → CloudFormation can tag
+❌ Pre-existing external resources  → CloudFormation cannot tag
+</code></pre>
+<hr>
+<h3>🔹 CloudFormation template URL encoding for prefilled parameters</h3>
+<p>When generating <strong>stack launch links</strong> with pre-populated parameters (e.g., a "Launch Stack" button in documentation or a portal), every parameter value in the URL must be properly URL-encoded. A single unencoded special character — a space, <code>+</code>, <code>=</code>, or <code>/</code> — silently breaks the parameter parsing and causes confusing deployment failures.</p>
+<pre><code># Stack launch URL format
+https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review
+  ?templateURL=https%3A%2F%2Fs3.amazonaws.com%2Fbucket%2Ftemplate.yaml
+  &#x26;param_EnvironmentType=prod
+  &#x26;param_AppName=my%2Bapp%2Bname    ← URL-encode special characters
+</code></pre>
+<p>Always URL-encode parameter values when constructing launch links programmatically, and test the full URL end-to-end before publishing it.</p>
+<blockquote>
+<p>📸 <strong>Visual diagrams throughout this guide are sourced from <a href="https://learn.cantrill.io">Adrian Cantrill's AWS SAA-C03 course</a> — highly recommended for anyone serious about AWS certifications.</strong></p>
+</blockquote>
+<hr>
+<p align="center">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" width="60"/><br/>
+  <em>AWS CloudFormation — Model, provision, and manage your entire infrastructure as code.</em>
+</p>
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-CloudFormation-Complete-Guide","title":"AWS-CloudFormation-Complete-Guide","date":"","excerpt":"","tags":[],"content":"$3"}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"ub8qLouCN0cA2r5a5Z098"}
+4:["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/1mwkoqsph5j67.js","async":true}]
+5:["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/2fjmpru07ey8_.js","async":true}]
+6:["$","$L7",null,{"children":["$","$8",null,{"name":"Next.MetadataOutlet","children":"$@9"}]}]
+9:null

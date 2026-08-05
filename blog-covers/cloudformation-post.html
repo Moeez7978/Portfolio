@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>CloudFormation Blog Cover</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 650px; height: 650px; overflow: hidden;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .card {
+    width: 650px; height: 650px;
+    position: relative; overflow: hidden;
+  }
+
+  /* ── FULL-BLEED PHOTO shifted to the right ── */
+  .photo-bg {
+    position: absolute; inset: 0; z-index: 0;
+    overflow: hidden;
+  }
+  .photo-bg img {
+    width: 140%; height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+    margin-left: auto; /* push image to the right */
+    transform: translateX(0.7%);
+  }
+
+  /* Dark overlay — heavier on the left so text pops, lighter on right so photo shows */
+  .photo-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(
+      105deg,
+      rgba(10,12,20,0.93) 0%,
+      rgba(10,12,20,0.82) 38%,
+      rgba(10,12,20,0.45) 62%,
+      rgba(10,12,20,0.15) 100%
+    );
+  }
+
+  /* Grid texture */
+  .grid {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+  }
+
+  /* Indigo glow on the left behind text */
+  .glow {
+    position: absolute; top: 50%; left: -80px;
+    transform: translateY(-50%);
+    width: 420px; height: 420px; border-radius: 50%; z-index: 1;
+    background: radial-gradient(circle, rgba(99,102,241,0.13) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── ALL CONTENT ── */
+  .content {
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; flex-direction: column;
+    padding: 26px 28px 22px;
+  }
+
+  /* TOP ROW */
+  .top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+
+  .aws-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(10,12,20,0.65); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,153,0,0.35); border-radius: 7px; padding: 5px 12px;
+  }
+  .aws-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: #ff9900; }
+  .aws-badge span { font-size: 10px; font-weight: 700; color: #ff9900; letter-spacing: 1px; text-transform: uppercase; }
+
+  .read-badge {
+    background: rgba(10,12,20,0.65); backdrop-filter: blur(10px);
+    border: 1px solid rgba(99,102,241,0.25); border-radius: 7px;
+    padding: 5px 14px; text-align: center;
+  }
+  .read-time { font-size: 16px; font-weight: 800; background: linear-gradient(90deg,#6366f1,#06b6d4); -webkit-background-clip:text; -webkit-text-fill-color:transparent; line-height:1; }
+  .read-label { font-size: 8px; color: #475569; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; margin-top: 1px; }
+
+  /* MAIN TEXT */
+  .label-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .service-icon {
+    width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+    background: linear-gradient(135deg,#1a1f35,#232a45);
+    border: 1px solid rgba(99,102,241,0.3);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .label-text { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 0.6px; text-transform: uppercase; }
+
+  .headline {
+    font-size: 34px; font-weight: 800; line-height: 1.15;
+    color: #f1f5f9; letter-spacing: -0.5px; margin-bottom: 8px;
+    max-width: 340px;
+  }
+  .headline span {
+    background: linear-gradient(90deg,#6366f1,#06b6d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    font-size: 11.5px; color: #94a3b8; font-weight: 500;
+    margin-bottom: 20px; max-width: 310px; line-height: 1.55;
+  }
+
+  /* CTA BUTTONS */
+  .cta-row { display: flex; gap: 10px; margin-bottom: 22px; }
+
+  .btn-primary {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 18px; border-radius: 9px; border: none; cursor: pointer;
+    background: linear-gradient(90deg,#6366f1,#06b6d4);
+    font-size: 12px; font-weight: 700; color: #fff; letter-spacing: 0.3px;
+    box-shadow: 0 4px 18px rgba(99,102,241,0.35);
+  }
+  .btn-primary svg { flex-shrink: 0; }
+
+  .btn-secondary {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 18px; border-radius: 9px; cursor: pointer;
+    background: rgba(10,12,20,0.6); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,153,0,0.35);
+    font-size: 12px; font-weight: 700; color: #ff9900; letter-spacing: 0.3px;
+  }
+  .btn-secondary svg { flex-shrink: 0; }
+
+  /* TOPIC PILLS */
+  .topics { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0; max-width: 360px; }
+  .pill { font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.3px; }
+  .pill-blue  { background: rgba(99,102,241,0.12); color: #818cf8; border: 1px solid rgba(99,102,241,0.22); }
+  .pill-cyan  { background: rgba(6,182,212,0.10);  color: #22d3ee; border: 1px solid rgba(6,182,212,0.22); }
+  .pill-amber { background: rgba(245,158,11,0.10); color: #fbbf24; border: 1px solid rgba(245,158,11,0.22); }
+  .pill-green { background: rgba(16,185,129,0.10); color: #34d399; border: 1px solid rgba(16,185,129,0.22); }
+
+  /* SPACER */
+  .spacer { flex: 1; }
+
+  /* DIVIDER */
+  .divider {
+    width: 100%; height: 1px; margin-bottom: 16px;
+    background: linear-gradient(90deg, rgba(99,102,241,0.4), rgba(6,182,212,0.3), transparent);
+  }
+
+  /* AUTHOR */
+  .author { display: flex; align-items: center; gap: 11px; }
+
+  .avatar-ring {
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg,#6366f1,#06b6d4);
+    padding: 2px; box-shadow: 0 0 14px rgba(99,102,241,0.5);
+    position: relative;
+  }
+  .avatar-inner { width:100%; height:100%; border-radius:50%; overflow:hidden; background:#0a0c14; }
+  .avatar-inner img { width:100%; height:100%; object-fit:cover; object-position:center top; }
+  .online-dot {
+    position:absolute; bottom:1px; right:1px;
+    width:11px; height:11px; border-radius:50%;
+    background:#10b981; border:2px solid #0a0c14;
+  }
+
+  .author-name { font-size: 14px; font-weight: 800; color: #f1f5f9; margin-bottom: 2px; }
+  .author-title { font-size: 10px; color: #6366f1; font-weight: 500; margin-bottom: 5px; }
+  .author-certs { display: flex; gap: 5px; }
+  .cert-badge {
+    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+    background: rgba(255,153,0,0.1); color: #ff9900; border: 1px solid rgba(255,153,0,0.25);
+  }
+
+  /* BOTTOM LINE */
+  .bottom-line {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 3px; z-index: 10;
+    background: linear-gradient(90deg,#6366f1,#06b6d4,#10b981);
+  }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Full-bleed photo, shifted right -->
+  <div class="photo-bg">
+    <img src="../profilepic.png" alt="Abdul Moeez" />
+  </div>
+
+  <div class="grid"></div>
+  <div class="glow"></div>
+
+  <div class="content">
+
+    <!-- Top row -->
+    <div class="top-row">
+      <div class="aws-badge"><div class="dot"></div><span>AWS SAA-C03</span></div>
+      <div class="read-badge">
+        <div class="read-time">25 min</div>
+        <div class="read-label">read</div>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div class="label-row">
+      <div class="service-icon">
+        <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+          <rect x="6" y="26" width="28" height="6" rx="2" fill="#6366f1" opacity="0.45"/>
+          <rect x="6" y="17" width="28" height="6" rx="2" fill="#6366f1" opacity="0.7"/>
+          <rect x="6" y="8"  width="28" height="6" rx="2" fill="#6366f1"/>
+          <line x1="14" y1="11" x2="26" y2="11" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"/>
+          <line x1="14" y1="20" x2="26" y2="20" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"/>
+          <line x1="14" y1="29" x2="26" y2="29" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="label-text">AWS Service Deep Dive</span>
+    </div>
+
+    <div class="headline">AWS <span>CloudFormation</span><br/>Complete Guide</div>
+    <div class="subtitle">Master Infrastructure as Code for the AWS Solutions Architect Associate exam — templates, stacks, and beyond.</div>
+
+    <!-- CTA Buttons -->
+    <div class="cta-row">
+      <div class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="white" stroke="none"/>
+        </svg>
+        Read Now
+      </div>
+      <div class="btn-secondary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+        </svg>
+        Prepare for AWS Exam
+      </div>
+    </div>
+
+    <!-- Topic pills -->
+    <div class="topics">
+      <span class="pill pill-blue">Templates &amp; Stacks</span>
+      <span class="pill pill-cyan">Intrinsic Functions</span>
+      <span class="pill pill-amber">Change Sets</span>
+      <span class="pill pill-green">Nested Stacks</span>
+      <span class="pill pill-blue">Stack Sets</span>
+      <span class="pill pill-cyan">Drift Detection</span>
+      <span class="pill pill-amber">Custom Resources</span>
+      <span class="pill pill-green">DeletionPolicy</span>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="divider"></div>
+
+    <!-- Author -->
+    <div class="author">
+      <div class="avatar-ring">
+        <div class="avatar-inner">
+          <img src="../profilepic.png" alt="Abdul Moeez" />
+        </div>
+        <div class="online-dot"></div>
+      </div>
+      <div>
+        <div class="author-name">Abdul Moeez</div>
+        <div class="author-title">Cloud Infrastructure &amp; DevOps Engineer</div>
+        <div class="author-certs">
+          <span class="cert-badge">AWS SAA-C03</span>
+          <span class="cert-badge">3+ Years</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-line"></div>
+</div>
+</body>
+</html>

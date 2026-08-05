@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>ELB Blog Cover Part 3</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 650px; height: 650px; overflow: hidden;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .card {
+    width: 650px; height: 650px;
+    position: relative; overflow: hidden;
+  }
+
+  .photo-bg {
+    position: absolute; inset: 0; z-index: 1; overflow: hidden;
+  }
+  .photo-bg img {
+    width: 140%; height: 100%;
+    object-fit: cover; object-position: center top;
+    display: block; margin-left: auto;
+    transform: translateX(0.7%);
+  }
+  .photo-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(
+      105deg,
+      rgba(12,8,22,0.92) 0%,
+      rgba(12,8,22,0.78) 36%,
+      rgba(12,8,22,0.30) 58%,
+      rgba(12,8,22,0.05) 100%
+    );
+  }
+
+  .grid {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(167,139,250,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(167,139,250,0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+  }
+
+  .glow {
+    position: absolute; top: 50%; left: -80px;
+    transform: translateY(-50%);
+    width: 420px; height: 420px; border-radius: 50%; z-index: 2;
+    background: radial-gradient(circle, rgba(167,139,250,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .content {
+    position: absolute; inset: 0; z-index: 5;
+    display: flex; flex-direction: column;
+    padding: 26px 28px 22px;
+  }
+
+  .top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+
+  .aws-badge {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(12,8,22,0.65); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,153,0,0.35); border-radius: 7px; padding: 5px 12px;
+  }
+  .aws-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: #ff9900; }
+  .aws-badge span { font-size: 10px; font-weight: 700; color: #ff9900; letter-spacing: 1px; text-transform: uppercase; }
+
+  .read-badge {
+    background: rgba(12,8,22,0.65); backdrop-filter: blur(10px);
+    border: 1px solid rgba(167,139,250,0.25); border-radius: 7px;
+    padding: 5px 14px; text-align: center;
+  }
+  .read-time { font-size: 16px; font-weight: 800; background: linear-gradient(90deg,#c4b5fd,#f9a8d4); -webkit-background-clip:text; -webkit-text-fill-color:transparent; line-height:1; }
+  .read-label { font-size: 8px; color: #475569; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; margin-top: 1px; }
+
+  .series-notice {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(167,139,250,0.08);
+    border: 1px solid rgba(167,139,250,0.25);
+    border-radius: 7px; padding: 6px 13px;
+    margin-bottom: 14px; width: fit-content;
+  }
+  .series-notice .part-num { font-size: 10px; font-weight: 800; color: #c4b5fd; letter-spacing: 0.5px; text-transform: uppercase; }
+  .series-notice .sep { width: 1px; height: 12px; background: rgba(167,139,250,0.3); }
+  .series-notice .series-text { font-size: 10px; font-weight: 500; color: #94a3b8; letter-spacing: 0.3px; }
+
+  .label-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .elb-icon {
+    width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(135deg,#160d2e,#221545);
+    border: 1px solid rgba(167,139,250,0.3);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 14px rgba(167,139,250,0.15);
+  }
+  .label-text { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 0.6px; text-transform: uppercase; }
+
+  .headline {
+    font-size: 30px; font-weight: 800; line-height: 1.18;
+    color: #f1f5f9; letter-spacing: -0.4px; margin-bottom: 6px; max-width: 340px;
+  }
+  .headline span {
+    background: linear-gradient(90deg,#c4b5fd,#f9a8d4);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    font-size: 11px; color: #b0bec5; font-weight: 500;
+    margin-bottom: 18px; max-width: 320px; line-height: 1.55;
+  }
+
+  .cta-row { display: flex; gap: 10px; margin-bottom: 18px; }
+
+  .btn-primary {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 18px; border-radius: 9px;
+    background: linear-gradient(90deg,#c4b5fd,#f9a8d4);
+    font-size: 12px; font-weight: 700; color: #0c0816; letter-spacing: 0.3px;
+    box-shadow: 0 4px 20px rgba(167,139,250,0.45);
+  }
+
+  .btn-secondary {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 18px; border-radius: 9px;
+    background: rgba(12,8,22,0.6); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,153,0,0.35);
+    font-size: 12px; font-weight: 700; color: #ff9900; letter-spacing: 0.3px;
+  }
+
+  .topics { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0; max-width: 360px; }
+  .pill { font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.3px; }
+  .pill-violet { background: rgba(167,139,250,0.15); color: #c4b5fd; border: 1px solid rgba(167,139,250,0.35); }
+  .pill-pink   { background: rgba(244,114,182,0.12); color: #f9a8d4; border: 1px solid rgba(244,114,182,0.30); }
+  .pill-amber  { background: rgba(251,191,36,0.12);  color: #fbbf24; border: 1px solid rgba(251,191,36,0.30); }
+  .pill-slate  { background: rgba(176,190,197,0.12); color: #b0bec5; border: 1px solid rgba(176,190,197,0.28); }
+
+  .spacer { flex: 1; }
+
+  .divider {
+    width: 100%; height: 1px; margin-bottom: 16px;
+    background: linear-gradient(90deg, rgba(196,181,253,0.6), rgba(249,168,212,0.4), transparent);
+  }
+
+  .author { display: flex; align-items: center; gap: 11px; }
+  .avatar-ring {
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg,#c4b5fd,#f9a8d4);
+    padding: 2px; box-shadow: 0 0 16px rgba(167,139,250,0.6);
+    position: relative;
+  }
+  .avatar-inner { width:100%; height:100%; border-radius:50%; overflow:hidden; background:#0c0816; }
+  .avatar-inner img { width:100%; height:100%; object-fit:cover; object-position:center top; }
+  .online-dot {
+    position:absolute; bottom:1px; right:1px;
+    width:11px; height:11px; border-radius:50%;
+    background:#10b981; border:2px solid #0c0816;
+  }
+  .author-name { font-size: 14px; font-weight: 800; color: #f1f5f9; margin-bottom: 2px; }
+  .author-title { font-size: 10px; color: #c4b5fd; font-weight: 500; margin-bottom: 5px; }
+  .author-certs { display: flex; gap: 5px; }
+  .cert-badge {
+    font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+    background: rgba(255,153,0,0.1); color: #ff9900; border: 1px solid rgba(255,153,0,0.25);
+  }
+
+  .bottom-line {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 3px; z-index: 10;
+    background: linear-gradient(90deg,#c4b5fd,#f9a8d4,#fb923c);
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="photo-bg">
+    <img src="../profilepic.png" alt="Abdul Moeez" />
+  </div>
+  <div class="grid"></div>
+  <div class="glow"></div>
+
+  <div class="content">
+    <div class="top-row">
+      <div class="aws-badge"><div class="dot"></div><span>AWS SAA-C03</span></div>
+      <div class="read-badge">
+        <div class="read-time">20 min</div>
+        <div class="read-label">read</div>
+      </div>
+    </div>
+
+    <div class="series-notice">
+      <span class="part-num">Part 3 of 3</span>
+      <div class="sep"></div>
+      <span class="series-text">Security, Monitoring, PrivateLink &amp; Exam Cheat Sheet</span>
+    </div>
+
+    <div class="label-row">
+      <div class="elb-icon">
+        <svg width="22" height="22" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient x1="0%" y1="100%" x2="100%" y2="0%" id="elb-g3"><stop stop-color="#4D27A8" offset="0%"/><stop stop-color="#A166FF" offset="100%"/></linearGradient></defs>
+          <rect width="80" height="80" fill="url(#elb-g3)" rx="8"/>
+          <path d="M30,53 C22.832,53 17,47.168 17,40 C17,32.832 22.832,27 30,27 C37.168,27 43,32.832 43,40 C43,47.168 37.168,53 30,53 M60,59 C60,61.206 58.206,63 56,63 C53.794,63 52,61.206 52,59 C52,56.794 53.794,55 56,55 C58.206,55 60,56.794 60,59 M56,17 C58.206,17 60,18.794 60,21 C60,23.206 58.206,25 56,25 C53.794,25 52,23.206 52,21 C52,18.794 53.794,17 56,17 M59,36 C61.206,36 63,37.794 63,40 C63,42.206 61.206,44 59,44 C56.794,44 55,42.206 55,40 C55,37.794 56.794,36 59,36 M44.949,41 L53.09,41 C53.568,43.833 56.033,46 59,46 C62.309,46 65,43.309 65,40 C65,36.691 62.309,34 59,34 C56.033,34 53.568,36.167 53.09,39 L44.949,39 C44.823,37.099 44.344,35.297 43.572,33.654 L52.446,25.823 C53.442,26.559 54.669,27 56,27 C59.309,27 62,24.309 62,21 C62,17.691 59.309,15 56,15 C52.691,15 50,17.691 50,21 C50,22.256 50.389,23.421 51.051,24.386 L42.581,31.859 C39.904,27.738 35.271,25 30,25 C21.729,25 15,31.729 15,40 C15,48.271 21.729,55 30,55 C35.271,55 39.904,52.262 42.581,48.141 L51.051,55.614 C50.389,56.579 50,57.744 50,59 C50,62.309 52.691,65 56,65 C59.309,65 62,62.309 62,59 C62,55.691 59.309,53 56,53 C54.669,53 53.442,53.441 52.446,54.177 L43.572,46.346 C44.344,44.703 44.823,42.901 44.949,41" fill="#FFFFFF"/>
+        </svg>
+      </div>
+      <span class="label-text">Elastic Load Balancing</span>
+    </div>
+
+    <div class="headline">Amazon <span>ELB</span><br/>Complete Guide</div>
+    <div class="subtitle">Security, Monitoring, PrivateLink, Pricing &amp; the ultimate Exam Cheat Sheet — everything to ace the SAA-C03.</div>
+
+    <div class="cta-row">
+      <div class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="#0c0816" stroke="none"/>
+        </svg>
+        Read Now
+      </div>
+      <div class="btn-secondary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+        </svg>
+        Prepare for AWS Exam
+      </div>
+    </div>
+
+    <div class="topics">
+      <span class="pill pill-violet">Security Groups</span>
+      <span class="pill pill-pink">CloudWatch Metrics</span>
+      <span class="pill pill-amber">Access Logs</span>
+      <span class="pill pill-slate">PrivateLink</span>
+      <span class="pill pill-violet">Pricing</span>
+      <span class="pill pill-pink">Exam Cheat Sheet</span>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="divider"></div>
+
+    <div class="author">
+      <div class="avatar-ring">
+        <div class="avatar-inner"><img src="../profilepic.png" alt="Abdul Moeez" /></div>
+        <div class="online-dot"></div>
+      </div>
+      <div>
+        <div class="author-name">Abdul Moeez</div>
+        <div class="author-title">Cloud Infrastructure &amp; DevOps Engineer</div>
+        <div class="author-certs">
+          <span class="cert-badge">AWS SAA-C03</span>
+          <span class="cert-badge">3+ Years</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-line"></div>
+</div>
+</body>
+</html>

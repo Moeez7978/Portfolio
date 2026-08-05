@@ -1,0 +1,592 @@
+1:"$Sreact.fragment"
+2:I[39756,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"default"]
+3:I[37457,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"default"]
+4:I[43880,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"Analytics"]
+6:I[97367,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"OutletBoundary"]
+7:"$Sreact.suspense"
+a:I[97367,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"ViewportBoundary"]
+c:I[97367,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"MetadataBoundary"]
+e:I[68027,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"default",1]
+:HL["/Portfolio/_next/static/chunks/0ts6-jl8eivfa.css","style"]
+:HL["/Portfolio/_next/static/media/797e433ab948586e-s.p.0r6juujl39pe6.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/Portfolio/_next/static/media/caa3a2e1cccd8315-s.p.0wgildi0cnwt9.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+0:{"P":null,"c":["","blog","AWS-ELB-Complete-Guide-Part2"],"q":"","i":false,"f":[[["",{"children":["blog",{"children":[["slug","AWS-ELB-Complete-Guide-Part2","d",null],{"children":["__PAGE__",{}]}]}]},"$undefined","$undefined",16],[["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/Portfolio/_next/static/chunks/0ts6-jl8eivfa.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/37bwioucar902.js","async":true,"nonce":"$undefined"}],["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/14mrh2-p_w84d.js","async":true,"nonce":"$undefined"}]],["$","html",null,{"lang":"en","suppressHydrationWarning":true,"children":["$","body",null,{"className":"geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__variable antialiased","children":[["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]],"forbidden":"$undefined","unauthorized":"$undefined"}],["$","$L4",null,{}]]}]}]]}],{"children":[["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":[["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],{"children":[["$","$1","c",{"children":["$L5",[["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/1mwkoqsph5j67.js","async":true,"nonce":"$undefined"}],["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/2fjmpru07ey8_.js","async":true,"nonce":"$undefined"}]],["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],{},null,false,null]},null,false,"$@9"]},null,false,"$@9"]},null,false,null],["$","$1","h",{"children":[null,["$","$La",null,{"children":"$Lb"}],["$","div",null,{"hidden":true,"children":["$","$Lc",null,{"children":["$","$7",null,{"name":"Next.Metadata","children":"$Ld"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],false]],"m":"$undefined","G":["$e",[["$","link","0",{"rel":"stylesheet","href":"/Portfolio/_next/static/chunks/0ts6-jl8eivfa.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]]],"S":true,"h":null,"s":"$undefined","l":"$undefined","p":"$undefined","d":"$undefined","b":"ub8qLouCN0cA2r5a5Z098"}
+f:[]
+9:"$Wf"
+10:I[90011,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js","/Portfolio/_next/static/chunks/1mwkoqsph5j67.js","/Portfolio/_next/static/chunks/2fjmpru07ey8_.js"],"default"]
+11:T5951,<h1><img src="https://icon.icepanel.io/AWS/svg/Networking-Content-Delivery/Elastic-Load-Balancing.svg" width="40" align="center"/> Amazon ELB — Complete Guide for AWS Solutions Architect Associate</h1>
+<h3>Part 2 of 3 — Cross-Zone LB, Health Checks, Sticky Sessions, SSL/TLS &#x26; Connection Draining</h3>
+<hr>
+<h2>⚖️ Cross-Zone Load Balancing</h2>
+<p>This is one of the most important and most tested ELB concepts. Understanding it requires understanding how ELB nodes work.</p>
+<h3>The Problem Without Cross-Zone Load Balancing</h3>
+<pre><code>Scenario: 2 AZs, AZ-A has 2 targets, AZ-B has 8 targets
+DNS returns both ELB node IPs equally (50/50 split)
+
+WITHOUT Cross-Zone Load Balancing:
+─────────────────────────────────────────────────────────
+  Client requests (100 total)
+       │
+       ├── 50 requests → ELB Node AZ-A
+       │                      │
+       │              ┌───────┴───────┐
+       │              ▼               ▼
+       │         Target A-1       Target A-2
+       │         (25 req)         (25 req)   ← OVERLOADED
+       │
+       └── 50 requests → ELB Node AZ-B
+                              │
+              ┌───────┬───────┼───────┬───────┐
+              ▼       ▼       ▼       ▼       ▼
+           B-1(6) B-2(6) B-3(6) B-4(6) ... B-8(6) ← UNDERLOADED
+
+Result: AZ-A targets handle 25 req each, AZ-B targets handle ~6 req each
+        UNEVEN distribution — AZ-A targets are 4x more loaded!
+</code></pre>
+<h3>With Cross-Zone Load Balancing Enabled</h3>
+<pre><code>WITH Cross-Zone Load Balancing:
+─────────────────────────────────────────────────────────
+  Client requests (100 total)
+       │
+       ├── 50 requests → ELB Node AZ-A ──────────────────────────────┐
+       │                      │                                       │
+       │              Distributes across ALL 10 targets in ALL AZs    │
+       │                                                              │
+       └── 50 requests → ELB Node AZ-B ──────────────────────────────┘
+                              │
+              Each of the 10 targets receives exactly 10 requests
+              (regardless of which AZ they are in)
+
+Result: All 10 targets handle 10 req each — PERFECTLY EVEN ✅
+</code></pre>
+<h3>Cross-Zone Behavior Per ELB Type</h3>
+<table>
+<thead>
+<tr>
+<th>ELB Type</th>
+<th>Default</th>
+<th>Can Change?</th>
+<th>Inter-AZ Data Transfer Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ALB</strong></td>
+<td>✅ Always ON</td>
+<td>❌ Cannot disable</td>
+<td>Free (no charge)</td>
+</tr>
+<tr>
+<td><strong>NLB</strong></td>
+<td>❌ OFF</td>
+<td>✅ Enable per TG</td>
+<td>💰 Charged (inter-AZ data)</td>
+</tr>
+<tr>
+<td><strong>GWLB</strong></td>
+<td>❌ OFF</td>
+<td>✅ Enable per TG</td>
+<td>💰 Charged (inter-AZ data)</td>
+</tr>
+<tr>
+<td><strong>CLB</strong></td>
+<td>❌ OFF</td>
+<td>✅ Enable</td>
+<td>Free if enabled</td>
+</tr>
+</tbody>
+</table>
+<h3>Cross-Zone — Zonal Shift Interaction</h3>
+<p>When Cross-Zone is <strong>disabled</strong> on NLB, each AZ node only routes to targets in its own AZ. This enables <strong>Zonal Shift</strong> — you can shift traffic away from an impaired AZ without affecting other AZs.</p>
+<pre><code>Cross-Zone OFF + Zonal Shift:
+  AZ-A impaired → Shift AZ-A traffic to AZ-B
+  AZ-B node handles all traffic → AZ-B targets only
+  AZ-A targets receive zero traffic
+
+Cross-Zone ON:
+  Zonal Shift still works but traffic from AZ-B node
+  may still reach AZ-A targets (cross-zone routing)
+</code></pre>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> ALB always has Cross-Zone ON and it's free. NLB has it OFF by default and charges for inter-AZ data transfer when enabled. This is a common exam trap.</p>
+</blockquote>
+<hr>
+<h2>🏥 Health Checks — How ELB Knows a Target is Alive</h2>
+<p>Health checks are the mechanism by which ELB determines whether a target is healthy and eligible to receive traffic. An unhealthy target is <strong>automatically removed</strong> from rotation.</p>
+<h3>Health Check Flow</h3>
+<pre><code>ELB Node ──── Health Check Request ────► Target
+              (every interval seconds)
+                                          │
+                                    ┌─────▼──────┐
+                                    │  Response? │
+                                    └─────┬──────┘
+                                          │
+                    ┌─────────────────────┼─────────────────────┐
+                    │                     │                     │
+                    ▼                     ▼                     ▼
+             2xx/3xx HTTP           Timeout / 5xx         Connection
+             response               response              refused
+                    │                     │                     │
+                    ▼                     ▼                     ▼
+            HealthyThreshold      UnhealthyThreshold     UnhealthyThreshold
+            count reached         count reached          count reached
+                    │                     │                     │
+                    ▼                     ▼                     ▼
+              HEALTHY ✅            UNHEALTHY ❌           UNHEALTHY ❌
+         (receives traffic)     (removed from rotation) (removed from rotation)
+</code></pre>
+<h3>Health Check Configuration</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+<th>Default</th>
+<th>Recommended</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Protocol</strong></td>
+<td>HTTP, HTTPS, TCP, UDP</td>
+<td>Varies</td>
+<td>Match your app protocol</td>
+</tr>
+<tr>
+<td><strong>Path</strong></td>
+<td>HTTP path to check (e.g., <code>/health</code>)</td>
+<td><code>/</code></td>
+<td>Dedicated <code>/health</code> endpoint</td>
+</tr>
+<tr>
+<td><strong>Port</strong></td>
+<td>Port to check</td>
+<td>Traffic port</td>
+<td>Same as traffic port</td>
+</tr>
+<tr>
+<td><strong>Healthy Threshold</strong></td>
+<td>Consecutive successes to mark healthy</td>
+<td>3</td>
+<td>2–3</td>
+</tr>
+<tr>
+<td><strong>Unhealthy Threshold</strong></td>
+<td>Consecutive failures to mark unhealthy</td>
+<td>3</td>
+<td>2–3</td>
+</tr>
+<tr>
+<td><strong>Timeout</strong></td>
+<td>Seconds to wait for response</td>
+<td>5s</td>
+<td>5–10s</td>
+</tr>
+<tr>
+<td><strong>Interval</strong></td>
+<td>Seconds between checks</td>
+<td>30s</td>
+<td>10–30s</td>
+</tr>
+<tr>
+<td><strong>Success Codes</strong></td>
+<td>HTTP codes considered healthy</td>
+<td>200</td>
+<td>200-299</td>
+</tr>
+</tbody>
+</table>
+<h3>Health Check Best Practices</h3>
+<pre><code>❌ Bad health check endpoint:
+   GET /  → Returns 200 but also queries DB, calls external APIs
+   Problem: Slow, expensive, cascading failures
+
+✅ Good health check endpoint:
+   GET /health → Returns {"status": "ok"} with 200
+   Checks: App is running, can accept connections
+   Does NOT check: DB, external services (those have their own health)
+
+✅ Deep health check (optional):
+   GET /health/deep → Checks DB connectivity, cache, dependencies
+   Use for: Readiness probes, not liveness probes
+</code></pre>
+<h3>Target States</h3>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>initial</strong></td>
+<td>Target just registered, health check not yet run</td>
+</tr>
+<tr>
+<td><strong>healthy</strong></td>
+<td>Passing health checks, receiving traffic</td>
+</tr>
+<tr>
+<td><strong>unhealthy</strong></td>
+<td>Failing health checks, NOT receiving traffic</td>
+</tr>
+<tr>
+<td><strong>unused</strong></td>
+<td>Target registered but target group not attached to LB</td>
+</tr>
+<tr>
+<td><strong>draining</strong></td>
+<td>Deregistering — existing connections finishing, no new traffic</td>
+</tr>
+<tr>
+<td><strong>unavailable</strong></td>
+<td>Health checks disabled</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>🍪 Sticky Sessions (Session Affinity)</h2>
+<p>By default, ELB distributes each request independently. Sticky sessions ensure a <strong>user's requests always go to the same target</strong> for the duration of their session.</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/SessionStickiness.png" width="750"/>
+</p>
+<h3>How Stickiness Works</h3>
+<pre><code>WITHOUT Stickiness:
+  User Session:
+    Request 1 → Target A (creates session data)
+    Request 2 → Target B (no session data — user logged out!)
+    Request 3 → Target C (no session data — broken experience)
+
+WITH Stickiness:
+  User Session:
+    Request 1 → Target A (creates session data, LB sets cookie)
+    Request 2 → Target A (cookie present, LB routes to same target)
+    Request 3 → Target A (consistent experience ✅)
+</code></pre>
+<h3>Stickiness Types (ALB)</h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Cookie Name</th>
+<th>Duration</th>
+<th>Who Sets Cookie</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Duration-based</strong></td>
+<td><code>AWSALB</code></td>
+<td>1 second – 7 days</td>
+<td>ALB generates and manages</td>
+</tr>
+<tr>
+<td><strong>Application-based</strong></td>
+<td>Custom name</td>
+<td>App-defined</td>
+<td>App generates, ALB uses it</td>
+</tr>
+</tbody>
+</table>
+<h3>Duration-Based Stickiness</h3>
+<pre><code>ALB sets cookie: AWSALB=&#x3C;encrypted-target-info>; Expires=&#x3C;duration>
+
+Flow:
+  1. First request → ALB picks target (round robin)
+  2. ALB sets AWSALB cookie in response
+  3. Subsequent requests include AWSALB cookie
+  4. ALB reads cookie → routes to same target
+  5. Cookie expires → next request goes through normal routing
+</code></pre>
+<h3>Application-Based Stickiness</h3>
+<pre><code>App sets cookie: MyAppSession=&#x3C;session-id>
+
+Flow:
+  1. App sets its own session cookie
+  2. ALB reads the app cookie name (configured in TG settings)
+  3. ALB uses the cookie value to determine target affinity
+  4. ALB also sets AWSALBAPP cookie to track the mapping
+
+Use when: App already manages sessions and you want LB to respect them
+</code></pre>
+<h3>Stickiness Caveats</h3>
+<pre><code>⚠️  Problems with stickiness:
+  - Uneven load distribution (one target gets all requests from heavy users)
+  - If target becomes unhealthy, sticky users are re-routed (session lost anyway)
+  - Doesn't work well with auto-scaling (new targets don't get sticky traffic)
+
+✅  Better alternative:
+  - Store session data externally: ElastiCache (Redis), DynamoDB
+  - Stateless application design — any target can handle any request
+  - Use stickiness only when external session storage is not feasible
+</code></pre>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> Stickiness is enabled at the <strong>Target Group</strong> level, not the listener level. NLB does not support cookie-based stickiness (it uses 5-tuple hash for flow persistence instead).</p>
+</blockquote>
+<hr>
+<h2>🔐 SSL/TLS Termination &#x26; SNI</h2>
+<h3>SSL Termination</h3>
+<p>ELB can terminate SSL/TLS connections, offloading the cryptographic work from your backend servers.</p>
+<pre><code>SSL Termination at ALB/NLB:
+─────────────────────────────────────────────────────────
+  Client ──── HTTPS (TLS) ────► ELB (decrypts here)
+                                      │
+                                      ▼
+                              ELB ──── HTTP ────► Target
+                              (plain text internally)
+
+Benefits:
+  ✓ Backend servers don't need SSL certs
+  ✓ Reduced CPU load on backend
+  ✓ Centralized certificate management via ACM
+  ✓ ALB can inspect HTTP headers for routing
+
+End-to-End Encryption (NLB TLS Pass-Through):
+─────────────────────────────────────────────────────────
+  Client ──── TLS ────► NLB (passes raw TCP) ──── TLS ────► Target
+  (NLB never decrypts — target holds the cert)
+
+Use when:
+  ✓ Compliance requires E2E encryption
+  ✓ Mutual TLS (mTLS) required
+  ✓ Backend must see original TLS handshake
+</code></pre>
+<h3>SNI — Server Name Indication</h3>
+<p>SNI allows <strong>multiple SSL certificates</strong> on a single ALB, one per domain/subdomain.</p>
+<pre><code>Without SNI (CLB limitation):
+  One CLB = One SSL cert = One domain
+  app.example.com → CLB-1 (cert for app.example.com)
+  api.example.com → CLB-2 (cert for api.example.com)  ← Expensive!
+
+With SNI (ALB/NLB):
+  One ALB = Multiple SSL certs = Multiple domains
+  app.example.com ─┐
+  api.example.com ─┤─► Single ALB ─► Different target groups
+  admin.example.com┘   (ALB reads SNI header, picks correct cert)
+
+How SNI works:
+  1. Client sends TLS ClientHello with SNI extension
+     (includes the hostname: "api.example.com")
+  2. ALB reads SNI, selects matching certificate
+  3. TLS handshake completes with correct cert
+  4. Request routed based on host header rule
+</code></pre>
+<h3>Certificate Management with ACM</h3>
+<pre><code>AWS Certificate Manager (ACM) Integration:
+  ✓ Free public SSL/TLS certificates
+  ✓ Auto-renewal (no manual cert rotation)
+  ✓ Direct attachment to ALB/NLB listeners
+  ✓ Wildcard certs: *.example.com covers all subdomains
+
+CLI: Attach cert to ALB listener
+aws elbv2 add-listener-certificates \
+  --listener-arn arn:aws:elasticloadbalancing:... \
+  --certificates CertificateArn=arn:aws:acm:...
+</code></pre>
+<h3>Security Policies (TLS Versions &#x26; Ciphers)</h3>
+<p>ALB and NLB let you choose a <strong>Security Policy</strong> that defines which TLS versions and cipher suites are supported:</p>
+<table>
+<thead>
+<tr>
+<th>Policy</th>
+<th>TLS Versions</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ELBSecurityPolicy-TLS13-1-2-2021-06</code></td>
+<td>TLS 1.2, 1.3</td>
+<td>✅ Recommended — modern clients</td>
+</tr>
+<tr>
+<td><code>ELBSecurityPolicy-TLS13-1-3-2021-06</code></td>
+<td>TLS 1.3 only</td>
+<td>Maximum security, newest clients only</td>
+</tr>
+<tr>
+<td><code>ELBSecurityPolicy-2016-08</code></td>
+<td>TLS 1.0, 1.1, 1.2</td>
+<td>Legacy clients (avoid)</td>
+</tr>
+<tr>
+<td><code>ELBSecurityPolicy-FS</code></td>
+<td>TLS 1.2 + Forward Secrecy</td>
+<td>Compliance requiring FS</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> Use <code>ELBSecurityPolicy-TLS13-1-2-2021-06</code> for most workloads. Avoid policies that include TLS 1.0/1.1 — they are deprecated and insecure.</p>
+</blockquote>
+<hr>
+<h2>🔌 Connection Draining (Deregistration Delay)</h2>
+<p>When a target is deregistered or marked unhealthy, ELB needs to handle <strong>in-flight requests</strong> gracefully. Connection Draining (called <strong>Deregistration Delay</strong> in ALB/NLB) handles this.</p>
+<h3>How It Works</h3>
+<pre><code>Normal State:
+  ELB ──── new requests ────► Target A (healthy, registered)
+
+Deregistration Triggered (scale-in, deployment, maintenance):
+  ┌─────────────────────────────────────────────────────────┐
+  │  DRAINING STATE                                         │
+  │                                                         │
+  │  ELB ──── NO new requests ────► Target A               │
+  │  ELB ──── existing connections still active ──► Target A│
+  │                                                         │
+  │  Timer starts: 0 ──────────────────────► 300 seconds   │
+  │                                                         │
+  │  When all connections close OR timer expires:           │
+  │  Target A is fully deregistered                         │
+  └─────────────────────────────────────────────────────────┘
+</code></pre>
+<h3>Configuration</h3>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Range</th>
+<th>Default</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Deregistration Delay</strong></td>
+<td>0 – 3600 seconds</td>
+<td>300 seconds</td>
+<td>Match your longest request duration</td>
+</tr>
+</tbody>
+</table>
+<pre><code>Tuning guidance:
+  Short-lived requests (API, microservices): 30–60 seconds
+  Long-lived requests (file uploads, reports): 300–600 seconds
+  WebSocket connections: Match session timeout
+  Set to 0: Immediate deregistration (use only if stateless + fast)
+</code></pre>
+<blockquote>
+<p>💡 <strong>Exam Tip:</strong> Connection Draining = CLB term. Deregistration Delay = ALB/NLB term. Same concept, different names. Setting it to 0 means immediate deregistration — in-flight requests will be dropped.</p>
+</blockquote>
+<hr>
+<h2>📊 Target Groups — Deep Dive</h2>
+<p>Target Groups are the bridge between the load balancer and your actual resources. They are configured independently and can be reused across multiple load balancers.</p>
+<h3>Target Group Configuration</h3>
+<pre><code>Target Group Settings:
+  ├── Target Type: instance | ip | lambda | alb
+  ├── Protocol: HTTP | HTTPS | TCP | UDP | TLS | TCP_UDP
+  ├── Port: 1–65535
+  ├── VPC: Which VPC targets reside in
+  ├── Protocol Version: HTTP1 | HTTP2 | gRPC (ALB only)
+  ├── Health Check: (see Health Checks section)
+  ├── Stickiness: enabled/disabled + type + duration
+  ├── Deregistration Delay: 0–3600 seconds
+  ├── Slow Start Duration: 0–900 seconds
+  └── Load Balancing Algorithm: Round Robin | LOR | Random
+</code></pre>
+<h3>Load Balancing Algorithms (ALB)</h3>
+<table>
+<thead>
+<tr>
+<th>Algorithm</th>
+<th>How It Works</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Round Robin</strong></td>
+<td>Requests distributed sequentially to each target</td>
+<td>Homogeneous targets, equal capacity</td>
+</tr>
+<tr>
+<td><strong>Least Outstanding Requests (LOR)</strong></td>
+<td>New request goes to target with fewest active requests</td>
+<td>Heterogeneous targets, varying request duration</td>
+</tr>
+<tr>
+<td><strong>Random</strong></td>
+<td>Random target selection</td>
+<td>Simple distribution, testing</td>
+</tr>
+<tr>
+<td><strong>Weighted Random</strong> (with Anomaly Mitigation)</td>
+<td>Random + avoids targets showing anomalies</td>
+<td>Production workloads with auto-scaling</td>
+</tr>
+</tbody>
+</table>
+<h3>Slow Start Mode</h3>
+<p>When a new target registers, it may not be fully warmed up (JVM, caches, etc.). Slow Start gradually increases traffic to new targets:</p>
+<pre><code>Slow Start Duration: 30 seconds (example)
+
+  t=0s:   New target registered → receives 0% of its fair share
+  t=10s:  Receives ~33% of its fair share
+  t=20s:  Receives ~66% of its fair share
+  t=30s:  Receives 100% of its fair share (fully ramped)
+
+Use case: Java apps (JVM warmup), apps with in-memory caches
+</code></pre>
+<h3>Multi-Target Group Routing (Weighted)</h3>
+<pre><code>ALB Rule with weighted forwarding:
+  Forward to:
+    ├── TG-Blue   (weight: 100) → 100% traffic (current production)
+    └── TG-Green  (weight: 0)   → 0% traffic (new version, not live)
+
+  Canary release:
+    ├── TG-Blue   (weight: 90)  → 90% traffic
+    └── TG-Green  (weight: 10)  → 10% traffic (canary)
+
+  Full cutover:
+    ├── TG-Blue   (weight: 0)   → 0% traffic (old version)
+    └── TG-Green  (weight: 100) → 100% traffic (new version)
+</code></pre>
+<hr>
+<h2>🌍 Regional vs Global Architecture</h2>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/RegionalandGlobalArchitecture-1.png" width="750"/>
+</p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/acantril/aws-sa-associate-saac03/main/1500-HA_and_SCALING/00_LEARNINGAIDS/RegionalandGlobalArchitecture-2.png" width="750"/>
+</p>
+<h3>ELB is Regional</h3>
+<p>ELB operates within a <strong>single AWS region</strong>. It distributes traffic across AZs within that region but does NOT span regions.</p>
+<pre><code>Regional Architecture (Single Region):
+  Route 53 ──► ALB (us-east-1) ──► Targets in us-east-1 AZs
+
+Global Architecture (Multi-Region):
+  Route 53 (Latency/Geolocation routing)
+       │
+       ├──► ALB (us-east-1) ──► Targets in us-east-1
+       ├──► ALB (eu-west-1) ──► Targets in eu-west-1
+       └──► ALB (ap-southeast-1) ──► Targets in ap-southeast-1
+
+OR use AWS Global Accelerator:
+  Global Accelerator (Anycast IPs) ──► ALB/NLB in multiple regions
+  (Better performance than Route 53 — uses AWS backbone network)
+</code></pre>
+<h3>ELB + Auto Scaling Group Integration</h3>
+<pre><code>Auto Scaling Group + ALB:
+  ┌─────────────────────────────────────────────────────┐
+  │                                                     │
+  │  ALB ──► Target Group ──► Auto Scaling Group        │
+  │                                │                    │
+  │                    ┌───────────┼───────────┐        │
+  │                    ▼           ▼           ▼        │
+  │                  EC2-1       EC2-2       EC2-3       │
+  │                                                     │
+  │  Scale Out: New EC2 launched → auto-registered in TG│
+  │  Scale In:  EC2 terminating → connection draining   │
+  │             → deregistered from TG → terminated     │
+  └─────────────────────────────────────────────────────┘
+
+Key: ASG uses ELB health checks (not just EC2 status checks)
+     If ELB marks instance unhealthy → ASG terminates and replaces it
+</code></pre>
+<hr>
+<p><em>Continued in Part 3 → Access Logs, Monitoring, Security, PrivateLink, Pricing &#x26; Exam Tips</em></p>
+5:["$","$L10",null,{"post":{"slug":"AWS-ELB-Complete-Guide-Part2","title":"AWS-ELB-Complete-Guide-Part2","date":"","excerpt":"","tags":[],"content":"$11"}}]
+b:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, maximum-scale=5"}]]
+12:I[27201,["/Portfolio/_next/static/chunks/37bwioucar902.js","/Portfolio/_next/static/chunks/14mrh2-p_w84d.js"],"IconMark"]
+8:null
+d:[["$","title","0",{"children":"Abdul Moeez | DevOps Engineer & Cloud Architect"}],["$","meta","1",{"name":"description","content":"AWS Certified Solutions Architect | DevOps Engineer specializing in scalable cloud solutions, CI/CD pipelines, and modern web development."}],["$","link","2",{"rel":"icon","href":"/Portfolio/favicon.ico?favicon.2vob68tjqpejf.ico","sizes":"256x256","type":"image/x-icon"}],["$","$L12","3",{}]]
