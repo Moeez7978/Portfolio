@@ -54,6 +54,7 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   const raw = fs.readFileSync(filePath, "utf-8");
   const { data, content } = matter(raw);
   const processed = await remark().use(remarkGfm).use(html, { sanitize: false }).process(content);
+  const wordCount = content.trim().split(/\s+/).length;
   return {
     slug,
     title: data.title || slug,
@@ -61,5 +62,6 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
     excerpt: data.excerpt || "",
     tags: data.tags || [],
     content: processed.toString(),
+    readTime: Math.max(1, Math.round(wordCount / 200)),
   };
 }
