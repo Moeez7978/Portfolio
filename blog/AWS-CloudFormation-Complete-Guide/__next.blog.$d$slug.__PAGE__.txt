@@ -1089,7 +1089,7 @@ https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/crea
   <img src="https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg" width="60"/><br/>
   <em>AWS CloudFormation — Model, provision, and manage your entire infrastructure as code.</em>
 </p>
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-CloudFormation-Complete-Guide","title":"AWS CloudFormation — Complete Guide for AWS Solutions Architect Associate","date":"2025-04-10","excerpt":"A complete guide to AWS CloudFormation covering templates, stacks, change sets, drift detection, and best practices for infrastructure as code.","tags":["AWS","CloudFormation","IaC","DevOps","Architecture"],"content":"$3","readTime":16}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"oTkhDdTSvJB9ubf7q84cT"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"post":{"slug":"AWS-CloudFormation-Complete-Guide","title":"AWS CloudFormation — Complete Guide for AWS Solutions Architect Associate","date":"2025-04-10","excerpt":"A complete guide to AWS CloudFormation covering templates, stacks, change sets, drift detection, and best practices for infrastructure as code.","tags":["AWS","CloudFormation","IaC","DevOps","Architecture"],"content":"$3","readTime":16}}],["$L4","$L5"],"$L6"]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"MspfnuwxqKiRi8OONZgfX"}
 4:["$","script","script-0",{"src":"/Portfolio/_next/static/chunks/1mwkoqsph5j67.js","async":true}]
 5:["$","script","script-1",{"src":"/Portfolio/_next/static/chunks/2fjmpru07ey8_.js","async":true}]
 6:["$","$L7",null,{"children":["$","$8",null,{"name":"Next.MetadataOutlet","children":"$@9"}]}]
